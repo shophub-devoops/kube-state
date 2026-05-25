@@ -1,1 +1,5 @@
-﻿# TODO: chart reference (filled in later phases)
+# CloudNativePG operator — PostgreSQL operator for the "standard" database option.
+chart: cnpg/cloudnative-pg
+version: 0.28.2
+namespace: cnpg-system
+createNamespace: true
