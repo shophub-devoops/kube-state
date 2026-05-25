@@ -1,1 +1,4 @@
 # kube-state
+
+GODS PROTECT ONLY THE STRONG.
+
