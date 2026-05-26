@@ -1,1 +1,10 @@
-﻿# TODO: chart reference (filled in later phases)
+# kube-prometheus-stack — Prometheus, Alertmanager, Grafana, node-exporter,
+# kube-state-metrics, and the prometheus-operator CRDs (ServiceMonitor,
+# PodMonitor, PrometheusRule). Required by spec section 4.1 for tracing,
+# logging, and metrics. Loki + Tempo will be added separately for logs and
+# tracing once metrics+alerting work end-to-end.
+chart: prometheus-community/kube-prometheus-stack
+version: 85.3.3
+appVersion: v0.90.1
+namespace: monitoring
+createNamespace: true
