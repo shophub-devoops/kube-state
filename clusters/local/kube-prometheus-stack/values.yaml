@@ -1,1 +1,31 @@
-﻿# TODO: value overrides
+## Local k3d overrides for kube-prometheus-stack.
+## Production values would lift these (esp. retention + storage).
+
+prometheus:
+  prometheusSpec:
+    # k3d nodes are docker containers with bounded RAM — keep Prometheus modest.
+    resources:
+      requests:
+        cpu: 100m
+        memory: 400Mi
+      limits:
+        memory: 800Mi
+    # 1 day retention is enough for demo. Production: 15d+.
+    retention: 1d
+    # Accept ServiceMonitor / PodMonitor from any namespace without the default
+    # `release: kube-prometheus-stack` label requirement. The Shop operator
+    # creates ServiceMonitors in tenant namespaces; we don't want to label
+    # them with the stack release name.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+
+grafana:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  # Default admin password is overridden by Helm to a random value stored in
+  # the kube-prometheus-stack-grafana Secret. Read it with:
+  # kubectl get secret -n monitoring kube-prometheus-stack-grafana \
+  #   -o jsonpath='{.data.admin-password}' | base64 -d
