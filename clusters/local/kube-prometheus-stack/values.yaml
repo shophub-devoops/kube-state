@@ -32,6 +32,14 @@ grafana:
   # NOTE: the Loki datasource is provided by the loki-stack chart's own
   # datasource ConfigMap (grafana_datasource=1), auto-loaded by this Grafana's
   # sidecar — we don't add it here to avoid a duplicate / default conflict.
+  # Tempo (tracing) has no auto-datasource, so we add it explicitly. Non-default
+  # to keep Prometheus as the single default datasource.
+  additionalDataSources:
+    - name: Tempo
+      type: tempo
+      access: proxy
+      url: http://tempo:3100
+      isDefault: false
 
 alertmanager:
   alertmanagerSpec:
