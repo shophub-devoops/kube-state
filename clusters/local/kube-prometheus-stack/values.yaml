@@ -29,3 +29,19 @@ grafana:
   # the kube-prometheus-stack-grafana Secret. Read it with:
   # kubectl get secret -n monitoring kube-prometheus-stack-grafana \
   #   -o jsonpath='{.data.admin-password}' | base64 -d
+
+alertmanager:
+  alertmanagerSpec:
+    # Pick up AlertmanagerConfig CRs from any namespace. OnNamespace strategy
+    # auto-scopes each config's routes to its own namespace — per-Shop alert
+    # isolation: a Shop's AlertmanagerConfig only routes that namespace's
+    # alerts to that Shop's Discord channel (apiURL secret-ref, URL never in git).
+    #
+    # We deliberately do NOT set an inline `config` with discord_configs: the
+    # prometheus-operator validates inline configs against its own schema, which
+    # lacks webhook_url_file, so a secret-ref webhook is only possible via the
+    # AlertmanagerConfig CRD's apiURL field.
+    alertmanagerConfigSelector: {}
+    alertmanagerConfigNamespaceSelector: {}
+    alertmanagerConfigMatcherStrategy:
+      type: OnNamespace
