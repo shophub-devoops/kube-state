@@ -1,0 +1,6 @@
+# Ephemeral storage (demo; production would use object storage). The chart's
+# default receivers already include OTLP (gRPC :4317, HTTP :4318), which is how
+# the Shop backend ships spans. Tempo's query API is on :3100 (the Grafana
+# Tempo datasource URL).
+persistence:
+  enabled: false
