@@ -1,0 +1,6 @@
+# Loki + Promtail for log aggregation (spec 4.1 "logging"). Promtail tails every
+# pod's stdout/stderr and ships to Loki; the kube-prometheus-stack Grafana
+# queries it via a Loki datasource. Tempo (tracing) is added separately.
+chart: grafana/loki-stack
+version: 2.10.2
+namespace: monitoring
