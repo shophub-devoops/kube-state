@@ -29,6 +29,9 @@ grafana:
   # the kube-prometheus-stack-grafana Secret. Read it with:
   # kubectl get secret -n monitoring kube-prometheus-stack-grafana \
   #   -o jsonpath='{.data.admin-password}' | base64 -d
+  # NOTE: the Loki datasource is provided by the loki-stack chart's own
+  # datasource ConfigMap (grafana_datasource=1), auto-loaded by this Grafana's
+  # sidecar — we don't add it here to avoid a duplicate / default conflict.
 
 alertmanager:
   alertmanagerSpec:

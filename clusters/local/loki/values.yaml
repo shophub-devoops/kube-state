@@ -1,0 +1,20 @@
+# Single-binary Loki with ephemeral storage (demo; production would enable
+# persistence + object storage). Grafana and Prometheus are disabled here — we
+# reuse the kube-prometheus-stack instances and wire Loki in as an extra Grafana
+# datasource (see kube-prometheus-stack/values.yaml grafana.additionalDataSources).
+loki:
+  enabled: true
+  # loki-stack auto-creates a Grafana datasource (picked up by the
+  # kube-prometheus-stack Grafana sidecar). It must NOT be default — Prometheus
+  # already holds that slot, and Grafana refuses two defaults.
+  isDefault: false
+  persistence:
+    enabled: false
+
+promtail:
+  enabled: true
+
+grafana:
+  enabled: false
+prometheus:
+  enabled: false
