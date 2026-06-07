@@ -1,1 +1,6 @@
-﻿# TODO: value overrides
+# Value overrides for the shop-operator chart on the local k3d cluster.
+# cluster.yaml maps the loadbalancer's :80 to host :8080, so a Shop's clickable
+# URL needs the ":8080" suffix to resolve from the host browser.
+ingress:
+  baseDomain: localhost
+  urlPort: ":8080"

@@ -1,1 +1,6 @@
-﻿# TODO: value overrides
+# Value overrides for the shophub chart on the local k3d cluster.
+# Chart defaults are used: image.repository = docker.io/urospetraskovic/shophub-backend
+# and image.tag defaults to the chart appVersion (0.1.0), which exists on the
+# registry once the v0.1.0 tag is pushed in the shophub repo. Add overrides
+# below if the local cluster needs them (e.g. a different image tag).
+{}

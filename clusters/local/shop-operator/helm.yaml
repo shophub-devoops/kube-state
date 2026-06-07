@@ -1,1 +1,11 @@
-﻿# TODO: chart reference (filled in later phases)
+# Shop operator — our own Helm chart, published to DockerHub as an OCI artifact
+# by the helm-charts repo CI (helm-publish workflow). Installs the operator
+# Deployment + RBAC and the 3 CRDs (Shop, DiscordChannel, Wallet).
+#
+# Version 0.1.0 is produced by tagging v0.1.0 in the helm-charts repo (the
+# helm-publish workflow strips the -dev suffix on tag builds). Until that tag
+# exists, only 0.1.0-dev.<date>.<sha> versions are on the registry.
+chart: oci://registry-1.docker.io/urospetraskovic/shop-operator
+version: 0.1.0
+namespace: shop-operator-system
+createNamespace: true
