@@ -3,9 +3,9 @@
 # (manage Shop CRs across tenant namespaces) + CNPG users DB + JWT secret +
 # ServiceMonitor.
 #
-# Version 0.1.0 is produced by tagging v0.1.0 in the helm-charts repo; until
-# then only 0.1.0-dev.<date>.<sha> versions exist on the registry.
+# Version 0.1.1 is produced by tagging v0.1.1 in the helm-charts repo; until
+# then only 0.1.1-dev.<date>.<sha> versions exist on the registry.
 chart: oci://registry-1.docker.io/urospetraskovic/shophub
-version: 0.1.0
+version: 0.1.1
 namespace: shophub
 createNamespace: true
