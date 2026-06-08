@@ -40,6 +40,15 @@ grafana:
       access: proxy
       url: http://tempo:3100
       isDefault: false
+  # Place each dashboard in the Grafana folder named by its `grafana_folder`
+  # annotation (the Shop operator sets it to the tenant namespace). Folder-level
+  # permissions then scope each tenant's dashboards to that tenant — the access
+  # control for spec 4.1 "users see only their own dashboards".
+  sidecar:
+    dashboards:
+      folderAnnotation: grafana_folder
+      provider:
+        foldersFromFilesStructure: true
 
 alertmanager:
   alertmanagerSpec:
