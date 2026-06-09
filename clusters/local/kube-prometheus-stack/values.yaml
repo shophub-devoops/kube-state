@@ -25,10 +25,22 @@ grafana:
     requests:
       cpu: 50m
       memory: 128Mi
-  # Default admin password is overridden by Helm to a random value stored in
-  # the kube-prometheus-stack-grafana Secret. Read it with:
-  # kubectl get secret -n monitoring kube-prometheus-stack-grafana \
-  #   -o jsonpath='{.data.admin-password}' | base64 -d
+  # Fixed admin password (LOCAL/DEMO only). The operator and ShopHub need this
+  # same password to provision per-tenant orgs/users via the Grafana API, and a
+  # cross-namespace Secret reference isn't possible — so a deterministic value is
+  # shared into their charts (clusters/local/{shop-operator,shophub}/values.yaml).
+  # Production: replace with sealed-secrets / external-secrets, never plaintext.
+  adminPassword: shophub-grafana-admin
+  # Grafana is reachable at grafana.localhost:8080 (k3d maps loadbalancer :80 to
+  # host :8080). Maintainers log in as admin (Main Org → all dashboards); each
+  # ShopHub tenant logs in with their scoped Viewer account (own org only).
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts:
+      - grafana.localhost
+    path: /
+    pathType: Prefix
   # NOTE: the Loki datasource is provided by the loki-stack chart's own
   # datasource ConfigMap (grafana_datasource=1), auto-loaded by this Grafana's
   # sidecar — we don't add it here to avoid a duplicate / default conflict.

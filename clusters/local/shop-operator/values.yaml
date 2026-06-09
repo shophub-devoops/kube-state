@@ -4,3 +4,10 @@
 ingress:
   baseDomain: localhost
   urlPort: ":8080"
+
+# Per-tenant Grafana org provisioning (spec 4.1 optional). adminPassword matches
+# the fixed value set in clusters/local/kube-prometheus-stack/values.yaml.
+grafana:
+  url: http://kube-prometheus-stack-grafana.monitoring
+  adminUser: admin
+  adminPassword: shophub-grafana-admin
