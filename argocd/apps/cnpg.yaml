@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cnpg
+  namespace: argocd
+  annotations:
+    # Wave 0: database/monitoring operators that publish CRDs go first.
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: shophub
+  sources:
+    # The chart, pinned to the same version as clusters/local/cnpg/helm.yaml.
+    - repoURL: https://cloudnative-pg.github.io/charts
+      chart: cloudnative-pg
+      targetRevision: 0.28.2
+      helm:
+        valueFiles:
+          # $values resolves to the git source below — the single source of
+          # truth for overrides stays clusters/local/, not duplicated here.
+          - $values/clusters/local/cnpg/values.yaml
+    - repoURL: https://github.com/shophub-devoops/kube-state.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cnpg-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

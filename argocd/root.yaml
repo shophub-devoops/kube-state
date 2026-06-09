@@ -1,0 +1,27 @@
+# App-of-apps: a single Application that points at argocd/apps/, so Argo CD
+# manages every component Application declaratively. Applying this one manifest
+# (after the bootstrap below) brings the whole cluster to its desired state.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: shophub
+  source:
+    repoURL: https://github.com/shophub-devoops/kube-state.git
+    targetRevision: main
+    path: argocd/apps
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
