@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: shophub
+  namespace: argocd
+spec:
+  description: ShopHub platform — GitOps-managed cluster state.
+  # Only the chart repos and this kube-state repo may be sourced.
+  sourceRepos:
+    - https://github.com/shophub-devoops/kube-state.git
+    - https://cloudnative-pg.github.io/charts
+    - https://mongodb.github.io/helm-charts
+    - https://prometheus-community.github.io/helm-charts
+    - https://grafana.github.io/helm-charts
+    - registry-1.docker.io/urospetraskovic
+  destinations:
+    - namespace: '*'
+      server: https://kubernetes.default.svc
+  # Charts install cluster-scoped resources (CRDs, ClusterRoles, Namespaces),
+  # so both scopes are whitelisted for this single-tenant platform project.
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

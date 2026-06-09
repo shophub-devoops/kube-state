@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+  annotations:
+    # Wave 0: publishes the monitoring CRDs (ServiceMonitor, PrometheusRule,
+    # AlertmanagerConfig) that shop-operator and shophub depend on.
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: shophub
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: 85.3.3
+      helm:
+        valueFiles:
+          - $values/clusters/local/kube-prometheus-stack/values.yaml
+    - repoURL: https://github.com/shophub-devoops/kube-state.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # The stack's CRDs exceed the client-side apply annotation size limit;
+      # server-side apply avoids the "metadata.annotations too long" error.
+      - ServerSideApply=true

@@ -66,6 +66,16 @@ The cluster exposes the load balancer on host ports `8080` (→ :80) and
 `8443` (→ :443), so Shop storefronts are reachable at
 `http://<shop>.localhost:8080`.
 
+## GitOps (Argo CD)
+
+The manual flow above is the simplest way to stand the cluster up. For a
+hands-off, continuously-reconciled setup, [`argocd/`](argocd/) provides an
+**app-of-apps**: one `kubectl apply` hands the whole cluster to Argo CD, which
+installs every component (from the same pinned versions and `values.yaml` files
+via multi-source Applications) and self-heals drift. See
+[`argocd/README.md`](argocd/README.md) for the bootstrap. This satisfies the
+optional GitOps part of spec 5.3.
+
 ## CI
 
 - **commit-lint** — enforces Conventional Commits on PR titles/commits.

@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: shophub
+  namespace: argocd
+  annotations:
+    # Wave 2: depends on the Shop CRD (shop-operator, wave 1) and the
+    # ServiceMonitor CRD (kube-prometheus-stack, wave 0).
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: shophub
+  sources:
+    - repoURL: registry-1.docker.io/urospetraskovic
+      chart: shophub
+      targetRevision: 0.1.1
+      helm:
+        valueFiles:
+          - $values/clusters/local/shophub/values.yaml
+    - repoURL: https://github.com/shophub-devoops/kube-state.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: shophub
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
