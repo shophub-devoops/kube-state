@@ -6,6 +6,6 @@
 # Version 0.1.1 is produced by tagging v0.1.1 in the helm-charts repo; until
 # then only 0.1.1-dev.<date>.<sha> versions exist on the registry.
 chart: oci://registry-1.docker.io/urospetraskovic/shophub
-version: 0.1.1
+version: 0.2.0
 namespace: shophub
 createNamespace: true
