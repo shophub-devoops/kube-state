@@ -36,8 +36,8 @@ kube-state
 | kube-prometheus-stack | `prometheus-community/kube-prometheus-stack` | 85.3.3 | `monitoring` | Metrics, alerting, Grafana, and the prometheus-operator CRDs (ServiceMonitor, PrometheusRule) |
 | loki | `grafana/loki-stack` | 2.10.2 | `monitoring` | Log aggregation (spec 4.1 "logging") |
 | tempo | `grafana/tempo` | 1.10.3 | `monitoring` | Distributed tracing; Shop backend pushes spans over OTLP/HTTP (spec 4.1 "tracing") |
-| shop-operator | `oci://.../urospetraskovic/shop-operator` | 0.1.4 | `shop-operator-system` | The Shop operator + its CRDs |
-| shophub | `oci://.../urospetraskovic/shophub` | 0.1.1 | `shophub` | The ShopHub platform backend |
+| shop-operator | `oci://.../urospetraskovic/shop-operator` | 0.1.6 | `shop-operator-system` | The Shop operator + its CRDs |
+| shophub | `oci://.../urospetraskovic/shophub` | 0.2.0 | `shophub` | The ShopHub platform (UI + API, exposed at `shophub.localhost:8080`) |
 
 ## Bringing up the local cluster
 
@@ -52,7 +52,21 @@ helm repo add prometheus-community https://prometheus-community.github.io/helm-c
 helm repo add grafana https://grafana.github.io/helm-charts
 helm repo update
 
-# 3. install each component with its pinned version + values, e.g.:
+# 3. Grafana admin secret — the password lives ONLY in the cluster, never in
+# git. Grafana (monitoring), the Shop operator (shop-operator-system) and
+# ShopHub (shophub) each read it from a Secret named grafana-admin in their own
+# namespace (Secrets can't be referenced across namespaces), so create the same
+# secret in all three:
+GRAFANA_PASS=$(openssl rand -hex 16)
+for ns in monitoring shop-operator-system shophub; do
+  kubectl create namespace "$ns" --dry-run=client -o yaml | kubectl apply -f -
+  kubectl create secret generic grafana-admin -n "$ns" \
+    --from-literal=admin-user=admin \
+    --from-literal=admin-password="$GRAFANA_PASS"
+done
+echo "Grafana admin password: $GRAFANA_PASS"   # save it for the maintainer login
+
+# 4. install each component with its pinned version + values, e.g.:
 helm install cnpg cnpg/cloudnative-pg --version 0.28.2 \
   -n cnpg-system --create-namespace -f clusters/local/cnpg/values.yaml
 

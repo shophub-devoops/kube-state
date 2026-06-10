@@ -4,11 +4,13 @@
 # registry once the v0.1.0 tag is pushed in the shophub repo. Add overrides
 # below if the local cluster needs them (e.g. a different image tag).
 
-# Per-tenant Grafana access (spec 4.1 optional). adminPassword matches the fixed
-# value set in clusters/local/kube-prometheus-stack/values.yaml; externalUrl is
-# the host-browser URL the tenant opens (k3d maps loadbalancer :80 to :8080).
+# Per-tenant Grafana access (spec 4.1 optional). The admin password is read
+# from the pre-created grafana-admin Secret in this release's namespace (same
+# password as the monitoring-namespace copy Grafana itself uses); see the
+# kube-state README "Grafana admin secret" step. externalUrl is the
+# host-browser URL the tenant opens (k3d maps loadbalancer :80 to :8080).
 grafana:
   url: http://kube-prometheus-stack-grafana.monitoring
   externalUrl: http://grafana.localhost:8080
   adminUser: admin
-  adminPassword: shophub-grafana-admin
+  existingSecret: grafana-admin

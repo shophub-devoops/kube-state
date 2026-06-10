@@ -25,12 +25,15 @@ grafana:
     requests:
       cpu: 50m
       memory: 128Mi
-  # Fixed admin password (LOCAL/DEMO only). The operator and ShopHub need this
-  # same password to provision per-tenant orgs/users via the Grafana API, and a
-  # cross-namespace Secret reference isn't possible — so a deterministic value is
-  # shared into their charts (clusters/local/{shop-operator,shophub}/values.yaml).
-  # Production: replace with sealed-secrets / external-secrets, never plaintext.
-  adminPassword: shophub-grafana-admin
+  # Admin credentials come from a pre-created Secret so the password never
+  # lives in git. Create it (same password in the monitoring,
+  # shop-operator-system and shophub namespaces — the operator and ShopHub use
+  # it to drive the Grafana API, and Secrets can't be referenced across
+  # namespaces) before installing; see the README "Grafana admin secret" step.
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
   # Grafana is reachable at grafana.localhost:8080 (k3d maps loadbalancer :80 to
   # host :8080). Maintainers log in as admin (Main Org → all dashboards); each
   # ShopHub tenant logs in with their scoped Viewer account (own org only).
