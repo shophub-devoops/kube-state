@@ -36,8 +36,8 @@ kube-state
 | kube-prometheus-stack | `prometheus-community/kube-prometheus-stack` | 85.3.3 | `monitoring` | Metrics, alerting, Grafana, and the prometheus-operator CRDs (ServiceMonitor, PrometheusRule) |
 | loki | `grafana/loki-stack` | 2.10.2 | `monitoring` | Log aggregation (spec 4.1 "logging") |
 | tempo | `grafana/tempo` | 1.10.3 | `monitoring` | Distributed tracing; Shop backend pushes spans over OTLP/HTTP (spec 4.1 "tracing") |
-| shop-operator | `oci://.../urospetraskovic/shop-operator` | 0.1.6 | `shop-operator-system` | The Shop operator + its CRDs |
-| shophub | `oci://.../urospetraskovic/shophub` | 0.2.0 | `shophub` | The ShopHub platform (UI + API, exposed at `shophub.localhost:8080`) |
+| shop-operator | `oci://.../urospetraskovic/shop-operator` | 0.1.7 | `shop-operator-system` | The Shop operator + its CRDs |
+| shophub | `oci://.../urospetraskovic/shophub` | 0.2.1 | `shophub` | The ShopHub platform (UI + API, exposed at `shophub.localhost:8080`) |
 
 ## Bringing up the local cluster
 
