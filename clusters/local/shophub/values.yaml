@@ -14,3 +14,13 @@ grafana:
   externalUrl: http://grafana.localhost:8080
   adminUser: admin
   existingSecret: grafana-admin
+
+# Per-shop Discord notification channels (operator's DiscordChannel CRD).
+# guildId is the platform's Discord server; the bot token lives ONLY in the
+# pre-created discord-bot-token Secret (key: token) in the shophub namespace —
+# never in git. The bot needs Manage Channels + Manage Webhooks on the guild.
+discord:
+  guildId: "1508273714897092648"
+  botTokenSecret:
+    name: discord-bot-token
+    namespace: shophub
