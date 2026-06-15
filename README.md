@@ -41,6 +41,11 @@ kube-state
 
 ## Bringing up the local cluster
 
+> **New machine / from scratch?** See [`SETUP.md`](SETUP.md) for a full,
+> beginner-friendly runbook that also installs the prerequisites (Docker, k3d,
+> kubectl, helm) and walks through the demo end-to-end. The steps below are the
+> condensed version for a machine that already has the tools.
+
 ```bash
 # 1. create the k3d cluster from cluster.yaml
 k3d cluster create --config clusters/local/cluster.yaml
