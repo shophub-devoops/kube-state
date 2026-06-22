@@ -45,6 +45,11 @@ kube-state
 > beginner-friendly runbook that also installs the prerequisites (Docker, k3d,
 > kubectl, helm) and walks through the demo end-to-end. The steps below are the
 > condensed version for a machine that already has the tools.
+>
+> **Want to wipe everything and verify every feature from a clean slate?** See
+> [`TESTING.md`](TESTING.md) — a concepts primer, the full clean-Docker reset,
+> and a feature-by-feature verification checklist (shops, payments, Grafana,
+> Discord alerts, cluster metrics, …).
 
 ```bash
 # 1. create the k3d cluster from cluster.yaml
