@@ -171,12 +171,12 @@ kubectl get pods -n <ns>                        # app podovi + baza (-1)
 ### 4.11 Discord alarmi (spec D10)
 - **Preduslov:** prodavnica kreirana sa čekiranim Discord-om (korak 4.3) + `discord-bot-token` secret (korak 2C).
 - **Provera da je kanal napravljen:** na Discord serveru se pojavi kanal sa imenom prodavnice.
-- **Kako da okineš alarm:** alarm ima `for: 2m`, pa udeo grešaka mora da bude visok i da **traje neprekidno ~2 min** — kratka petlja (50 zahteva) NE okida. Pusti **trajnu** petlju koja gađa nepostojeći **API** put ~4 minuta:
+- **Kako da okineš alarm:** alarm ima `for: 10s` (skraćeno radi demoa), pa je dovoljna kratka petlja koja gađa nepostojeći **API** put ~1 min:
   ```powershell
-  $end = (Get-Date).AddMinutes(4)
+  $end = (Get-Date).AddSeconds(60)
   while ((Get-Date) -lt $end) { curl.exe -s -o NUL -H "Host: <ime>.localhost" http://localhost:8080/api/nema-ovoga }
   ```
-- **Očekuj:** posle ~2-3 min (alarm ima `for: 2m`) stigne **notifikacija na Discord kanal** te prodavnice.
+- **Očekuj:** za ~1 min stigne **notifikacija na Discord kanal** te prodavnice. (Rate se računa u prozoru od 5m, pa „resolved" poruka stigne par minuta nakon što prestaneš.)
 - **Provera pravila:** `kubectl get prometheusrule -A` i `kubectl get alertmanagerconfig -A`.
 
 ### 4.12 Metrike i alarmi celog klastera (spec 4.1)
