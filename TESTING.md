@@ -171,17 +171,36 @@ kubectl get pods -n <ns>                        # app podovi + baza (-1)
 ### 4.11 Discord alarmi (spec D10)
 - **Preduslov:** prodavnica kreirana sa čekiranim Discord-om (korak 4.3) + `discord-bot-token` secret (korak 2C).
 - **Provera da je kanal napravljen:** na Discord serveru se pojavi kanal sa imenom prodavnice.
-- **Kako da okineš alarm:** alarm ima `for: 2m`, pa udeo grešaka mora da bude visok i da **traje neprekidno ~2 min** — kratka petlja (50 zahteva) NE okida. Pusti **trajnu** petlju koja gađa nepostojeći **API** put ~4 minuta:
+- **Kako da okineš alarm:** alarm ima `for: 10s` (skraćeno radi demoa), pa je dovoljna kratka petlja koja gađa nepostojeći **API** put ~1 min:
   ```powershell
-  $end = (Get-Date).AddMinutes(4)
+  $end = (Get-Date).AddSeconds(60)
   while ((Get-Date) -lt $end) { curl.exe -s -o NUL -H "Host: <ime>.localhost" http://localhost:8080/api/nema-ovoga }
   ```
-- **Očekuj:** posle ~2-3 min (alarm ima `for: 2m`) stigne **notifikacija na Discord kanal** te prodavnice.
+- **Očekuj:** za ~1 min stigne **notifikacija na Discord kanal** te prodavnice. (Rate se računa u prozoru od 5m, pa „resolved" poruka stigne par minuta nakon što prestaneš.)
 - **Provera pravila:** `kubectl get prometheusrule -A` i `kubectl get alertmanagerconfig -A`.
 
 ### 4.12 Metrike i alarmi celog klastera (spec 4.1)
-- **Kako:** u Grafani otvori Kubernetes/Node dashboarde (dolaze sa kube-prometheus-stack-om).
-- **Očekuj:** CPU/RAM/FS/mreža po nodu. Cluster alarmi: `NodeHighMemory`, `NodeHighCPU` (definisani u operator chart-u).
+- **Kako (dashboardi):** u Grafani otvori Kubernetes/Node dashboarde (dolaze sa kube-prometheus-stack-om) — npr. „Node Exporter / Nodes".
+- **Očekuj:** CPU/RAM/FS/mreža po nodu. Cluster alarmi: `NodeHighMemory`, `NodeHighCPU` (definisani u operator chart-u, grupa `cluster.rules`).
+
+**Šta je Prometheus:** baza vremenskih serija + alarm-engine. On **skuplja (scrape) metrike** sa svih komponenti, čuva ih i **evaluira pravila alarma**. Grafana ga samo crta — kad gledaš dashboard, Grafana iza scene pita Prometheus. Zato „nismo posebno palili Prometheus" tokom testa: koristili smo ga **indirektno preko Grafane** sve vreme.
+
+**Provera da su cluster alarmi učitani (Prometheus UI):**
+```powershell
+kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090
+```
+Otvori <http://localhost:9090/alerts> → nađi `NodeHighMemory` i `NodeHighCPU`. Stanje `Inactive` je normalno dok nod nije preopterećen; `Pending`/`Firing` kad pređu prag.
+
+> Pragovi (operator chart, grupa `cluster.rules`): **RAM > 90%** i **CPU > 90%**, oba sa `for: 10s` (skraćeno sa 5m radi bržeg demoa). Per-shop alarmi (`ShopHighErrorRate`, `ShopHighLatency`) su takođe `for: 10s`.
+
+**Da OKINEŠ `NodeHighCPU` (opciono, opterećuje laptop):** pusti par „CPU-burner" podova pa sačekaj ~1-2 min:
+```powershell
+1..3 | ForEach-Object { kubectl run cpu-burner-$_ --image=busybox --restart=Never -- sh -c "while true; do :; done" }
+```
+Prati na <http://localhost:9090/alerts> da `NodeHighCPU` pređe u `Firing`. **Obavezno počisti posle:**
+```powershell
+1..3 | ForEach-Object { kubectl delete pod cpu-burner-$_ }
+```
 
 ### 4.13 Logovi i tracing (spec 4.1)
 - **Logovi (Loki):** u Grafani → Explore → izvor `Loki` → upit `{app="<ime>"}` → vidiš logove prodavnice.
