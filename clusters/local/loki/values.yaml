@@ -8,6 +8,13 @@ loki:
   # kube-prometheus-stack Grafana sidecar). It must NOT be default — Prometheus
   # already holds that slot, and Grafana refuses two defaults.
   isDefault: false
+  # loki-stack 2.10.2 ships Loki 2.6.1, which predates the log-volume endpoint
+  # (2.8) and the `drop` LogQL stage (2.9) that modern Grafana uses for the logs
+  # histogram — so Explore showed "Failed to load log volume … parse error".
+  # Pin the last 2.9.x: same chart/config schema (the breaking change is Loki
+  # 3.0), now able to parse the volume query. Logs themselves worked regardless.
+  image:
+    tag: 2.9.10
   persistence:
     enabled: false
 
