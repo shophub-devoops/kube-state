@@ -174,7 +174,7 @@ self-healing). **Opcija B** je ručna ako ti ArgoCD pravi problem.
 ```powershell
 # 1. instaliraj ArgoCD
 kubectl create namespace argocd
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
 # sačekaj da ArgoCD podigne pod-ove (1-2 min)
 kubectl -n argocd rollout status deploy/argocd-repo-server
@@ -303,9 +303,14 @@ Plaćanje radi na **Sepolia testnetu** sa našim test tokenom (nije pravi novac)
    MetaMask-u → sačekaj on-chain potvrdu → porudžbina prelazi u `confirmed`.
 6. **Grafana**: prijavi se kao admin, otvori dashboard te prodavnice (HTTP saobraćaj,
    404-ke, jedinstveni posetioci, CPU/RAM, itd.).
-7. **Alarmi**: izazovi greške (npr. više puta otvori nepostojeći URL prodavnice da
-   nakupiš 404/5xx) → alarm se okida → notifikacija stiže na Discord kanal te
-   prodavnice (ako si podesio Discord u koraku 4.2).
+7. **Alarmi**: izazovi greške gađajući nepostojeći **API** put prodavnice (ne-API putevi
+   vraćaju `index.html` sa 200, pa se ne broje kao 404). Alarm ima `for: 2m`, pa saobraćaj
+   mora da **traje neprekidno ~2 min** — kratka petlja ne okida; pusti trajnu ~4 min:
+   ```powershell
+   $end = (Get-Date).AddMinutes(4)
+   while ((Get-Date) -lt $end) { curl.exe -s -o NUL -H "Host: <ime>.localhost" http://localhost:8080/api/nema-ovoga }
+   ```
+   → alarm se okida → notifikacija stiže na Discord kanal te prodavnice (ako si podesio Discord u koraku 4.2).
 
 ---
 
