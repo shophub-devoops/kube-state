@@ -47,7 +47,7 @@ k3d cluster create --config clusters/local/cluster.yaml
 
 # 2. install Argo CD
 kubectl create namespace argocd
-kubectl apply -n argocd \
+kubectl apply -n argocd --server-side --force-conflicts \
   -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
 # 3. one-time config: the project + the OCI registry registration

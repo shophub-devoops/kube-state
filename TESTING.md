@@ -59,7 +59,7 @@ k3d cluster list
 Detaljno je u [`SETUP.md`](SETUP.md) (poglavlja 2–6). Ukratko, iz `kube-state` foldera:
 
 ```powershell
-# A. napravi klaster
+# A. napravi klaster, mora da budemo u kube-state folderu u terminalu
 k3d cluster create --config clusters/local/cluster.yaml
 
 # B. tajne (Grafana admin lozinka u 3 namespace-a)
@@ -77,7 +77,7 @@ kubectl create secret generic discord-bot-token -n shophub --from-literal=token=
 
 # D. instaliraj sve — ArgoCD način (preporuka)
 kubectl create namespace argocd
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 kubectl -n argocd rollout status deploy/argocd-repo-server
 kubectl apply -f argocd/project.yaml
 kubectl apply -f argocd/repositories.yaml
@@ -162,7 +162,7 @@ kubectl get pods -n <ns>                        # app podovi + baza (-1)
   ```
   Otvori <http://localhost:3000>, prijavi se kao `admin` / (lozinka iz koraka 2B). Nađi dashboard te prodavnice.
 - **Očekuj panele:** ukupno HTTP zahteva (24h), uspešni (2xx/3xx), neuspešni (4xx/5xx), **404 sa endpoint-ima**, **jedinstveni posetioci**, GB saobraćaja, CPU/RAM/fajl-sistem/mreža.
-- **Da nakupiš podatke:** par puta osveži storefront i otvori nepostojeći URL.
+- **Da nakupiš podatke:** par puta osveži storefront i pogodi nepostojeći **API** put (npr. `http://<ime>.localhost:8080/api/nema-ovoga`). Napomena: ne-API putevi (npr. `/nema-ovoga`) vraćaju `index.html` sa statusom 200 (SPA fallback), pa se NE broje kao 404 — za pravi 404 put mora počinjati sa `/api`, `/metrics` ili `/probe`.
 
 ### 4.10 Per-tenant Grafana izolacija (spec 4.1 opciono)
 - **Kako:** u ShopHub dashboard-u klikni **Metrics** → dobiješ login za **svoju** Grafana organizaciju.
@@ -171,11 +171,12 @@ kubectl get pods -n <ns>                        # app podovi + baza (-1)
 ### 4.11 Discord alarmi (spec D10)
 - **Preduslov:** prodavnica kreirana sa čekiranim Discord-om (korak 4.3) + `discord-bot-token` secret (korak 2C).
 - **Provera da je kanal napravljen:** na Discord serveru se pojavi kanal sa imenom prodavnice.
-- **Kako da okineš alarm:** generiši greške — npr. u PowerShell-u petlja koja gađa nepostojeći URL:
+- **Kako da okineš alarm:** alarm ima `for: 2m`, pa udeo grešaka mora da bude visok i da **traje neprekidno ~2 min** — kratka petlja (50 zahteva) NE okida. Pusti **trajnu** petlju koja gađa nepostojeći **API** put ~4 minuta:
   ```powershell
-  1..50 | ForEach-Object { curl.exe -s -o NUL -H "Host: <ime>.localhost" http://localhost:8080/nema-ovoga }
+  $end = (Get-Date).AddMinutes(4)
+  while ((Get-Date) -lt $end) { curl.exe -s -o NUL -H "Host: <ime>.localhost" http://localhost:8080/api/nema-ovoga }
   ```
-- **Očekuj:** posle nekoliko minuta (alarm ima `for: 2m`) stigne **notifikacija na Discord kanal** te prodavnice.
+- **Očekuj:** posle ~2-3 min (alarm ima `for: 2m`) stigne **notifikacija na Discord kanal** te prodavnice.
 - **Provera pravila:** `kubectl get prometheusrule -A` i `kubectl get alertmanagerconfig -A`.
 
 ### 4.12 Metrike i alarmi celog klastera (spec 4.1)
@@ -184,7 +185,14 @@ kubectl get pods -n <ns>                        # app podovi + baza (-1)
 
 ### 4.13 Logovi i tracing (spec 4.1)
 - **Logovi (Loki):** u Grafani → Explore → izvor `Loki` → upit `{app="<ime>"}` → vidiš logove prodavnice.
-- **Tracing (Tempo):** Explore → izvor `Tempo` → vidiš trace-ove zahteva (backend ih šalje preko OTLP).
+  - Braon upozorenje **„Failed to load log volume … parse error … unexpected IDENTIFIER"** je samo histogram na vrhu (Grafana↔Loki kozmetička začkoljica) — **logovi se svejedno učitavaju**, ignoriši ga.
+- **Tracing (Tempo):** Explore → izvor `Tempo` → tab `Search` → `Run query` → vidiš trace-ove (backend ih šalje preko OTLP).
+  - Lista je puna `GET /probe/liveness`, `/probe/readiness`, `/metrics` jer se ti gađaju svakih ~15s i brojčano dominiraju. Tvoji `/api/...` pozivi (kupovina, artikli) su tu, samo retki.
+  - **Da izvučeš baš API trace:** podesi vreme tako da obuhvati kad si kupovao (npr. `Last 3 hours`), pa tab **`TraceQL`** i upit (sintaksa: vitičaste zagrade + atribut):
+    ```
+    { name =~ ".*orders.*" }
+    ```
+    (ili `{ name =~ ".*items.*" }`). Alternativa: u `Search Options` podigni `Limit` na ~200 pa skroluj.
 
 ### 4.14 Izmena i brisanje prodavnice (spec 1.2)
 - **Izmena:** olovka na kartici → promeni availability (npr. standard→high) ili wallet → sačuvaj.
