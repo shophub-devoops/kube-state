@@ -13,3 +13,17 @@ grafana:
   url: http://kube-prometheus-stack-grafana.monitoring
   adminUser: admin
   existingSecret: grafana-admin
+
+# Cluster-level alerts (NodeHighCPU/NodeHighMemory) → maintainers Discord
+# channel. The chart creates a DiscordChannel CR (operator provisions the
+# channel + webhook on the guild) and an AlertmanagerConfig in the monitoring
+# namespace. Same guild + bot token Secret as the shophub chart's per-shop
+# channels; the token itself lives only in the pre-created discord-bot-token
+# Secret (see SETUP.md), never in git.
+clusterAlerts:
+  enabled: true
+  discord:
+    guildId: "1508273714897092648"
+    botTokenSecret:
+      name: discord-bot-token
+      namespace: shophub
