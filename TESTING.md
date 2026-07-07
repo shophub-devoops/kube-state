@@ -179,6 +179,18 @@ kubectl get pods -n <ns>                        # app podovi + baza (-1)
 - **Očekuj:** za ~1 min stigne **notifikacija na Discord kanal** te prodavnice. (Rate se računa u prozoru od 5m, pa „resolved" poruka stigne par minuta nakon što prestaneš.)
 - **Provera pravila:** `kubectl get prometheusrule -A` i `kubectl get alertmanagerconfig -A`.
 
+test klasterskog alarma:
+
+kubectl run cpu-burn --image=busybox --restart=Never -- sh -c 'for i in $(seq $(nproc)); do while :; do :; done & done; wait'
+
+kubectl delete pod cpu-burn
+
+test kad oborimo prodavnicu (stavimo replike na 0):
+kubectl scale shop <ime> -n <tenant-ns> --replicas=0   # → poruka u kanal prodavnice
+kubectl scale shop <ime> -n <tenant-ns> --replicas=2   # → resolved
+
+
+
 ### 4.12 Metrike i alarmi celog klastera (spec 4.1)
 - **Kako (dashboardi):** u Grafani otvori Kubernetes/Node dashboarde (dolaze sa kube-prometheus-stack-om) — npr. „Node Exporter / Nodes".
 - **Očekuj:** CPU/RAM/FS/mreža po nodu. Cluster alarmi: `NodeHighMemory`, `NodeHighCPU` (definisani u operator chart-u, grupa `cluster.rules`).
