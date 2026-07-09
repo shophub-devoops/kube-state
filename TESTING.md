@@ -179,23 +179,17 @@ kubectl get pods -n <ns>                        # app podovi + baza (-1)
 - **Očekuj:** za ~1 min stigne **notifikacija na Discord kanal** te prodavnice. (Rate se računa u prozoru od 5m, pa „resolved" poruka stigne par minuta nakon što prestaneš.)
 - **Provera pravila:** `kubectl get prometheusrule -A` i `kubectl get alertmanagerconfig -A`.
 
-test klasterskog alarma:
-
-kubectl run cpu-burn --image=busybox --restart=Never -- sh -c 'for i in $(seq $(nproc)); do while :; do :; done & done; wait'
-
-kubectl delete pod cpu-burn
-
-test kad oborimo prodavnicu (stavimo replike na 0):
-kubectl scale shop <ime> -n <tenant-ns> --replicas=0   # → poruka u kanal prodavnice
-kubectl scale shop <ime> -n <tenant-ns> --replicas=2   # → resolved
-
-
+**Test `ShopDown` (obaranje prodavnice na 0 replika):**
+```powershell
+kubectl scale shop <ime> -n <tenant-ns> --replicas=0   # → za ~1-2 min FIRING:1 u kanal prodavnice
+kubectl scale shop <ime> -n <tenant-ns> --replicas=2   # → resolved za par minuta
+```
+> Skalira se **Shop** (naš scale subresource), ne Deployment — Deployment bi operator vratio na
+> sledećem reconcile-u. Vrati na 2 u roku od ~5 min: pravilo gleda prozor od 5m („bila je živa
+> nedavno, a sad nema nijedan živ pod"), pa se posle 5 min na nuli alarm sam ugasi i resolved
+> stigne pre nego što išta vratiš.
 
 ### 4.12 Metrike i alarmi celog klastera (spec 4.1)
-- **Kako (dashboardi):** u Grafani otvori Kubernetes/Node dashboarde (dolaze sa kube-prometheus-stack-om) — npr. „Node Exporter / Nodes".
-- **Očekuj:** CPU/RAM/FS/mreža po nodu. Cluster alarmi: `NodeHighMemory`, `NodeHighCPU` (definisani u operator chart-u, grupa `cluster.rules`).
-
-**Šta je Prometheus:** baza vremenskih serija + alarm-engine. On **skuplja (scrape) metrike** sa svih komponenti, čuva ih i **evaluira pravila alarma**. Grafana ga samo crta — kad gledaš dashboard, Grafana iza scene pita Prometheus. Zato „nismo posebno palili Prometheus" tokom testa: koristili smo ga **indirektno preko Grafane** sve vreme.
 
 **Provera da su cluster alarmi učitani (Prometheus UI):**
 ```powershell
@@ -203,22 +197,25 @@ kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:909
 ```
 Otvori <http://localhost:9090/alerts> → nađi `NodeHighMemory` i `NodeHighCPU`. Stanje `Inactive` je normalno dok nod nije preopterećen; `Pending`/`Firing` kad pređu prag.
 
-> Pragovi (operator chart, grupa `cluster.rules`): **RAM > 90%** i **CPU > 90%**, oba sa `for: 10s` (skraćeno sa 5m radi bržeg demoa). Per-shop alarmi (`ShopHighErrorRate`, `ShopHighLatency`) su takođe `for: 10s`.
+> Pragovi (operator chart, grupa `cluster.rules`): **RAM > 90%** i **CPU > 90%**, oba sa `for: 10s`  Per-shop alarmi (`ShopHighErrorRate`, `ShopHighLatency`) su takođe `for: 10s`.
 
-**Da OKINEŠ `NodeHighCPU` (opciono, opterećuje laptop):** pusti par „CPU-burner" podova pa sačekaj ~1-2 min:
+**Da OKINEŠ `NodeHighCPU` (opciono, opterećuje laptop — ventilatori će raditi):** jedan pod koji
+upali beskonačnu petlju **po svakom jezgru** (`nproc` se sam prilagodi broju jezgara):
 ```powershell
-1..3 | ForEach-Object { kubectl run cpu-burner-$_ --image=busybox --restart=Never -- sh -c "while true; do :; done" }
+kubectl run cpu-burn --image=busybox --restart=Never -- sh -c 'for i in $(seq $(nproc)); do while :; do :; done & done; wait'
 ```
-Prati na <http://localhost:9090/alerts> da `NodeHighCPU` pređe u `Firing`. **Obavezno počisti posle:**
+Za ~2-3 min (rate prozor 1m + evaluacija 30s + groupWait 30s) stiže **jedna grupisana FIRING:3
+poruka u #cluster-alerts** — k3d nodovi dele CPU laptopa, pa sva tri pređu prag istovremeno.
+Prati i na <http://localhost:9090/alerts>. **Obavezno počisti posle:**
 ```powershell
-1..3 | ForEach-Object { kubectl delete pod cpu-burner-$_ }
+kubectl delete pod cpu-burn
 ```
+> Ne koristi varijantu „više podova sa po jednom petljom" (npr. 3 poda = ~3 jezgra) — na mašini
+> sa ~12 jezgara to je ~25% CPU i alarm nikad ne pređe prag od 90%.
 
 ### 4.13 Logovi i tracing (spec 4.1)
 - **Logovi (Loki):** u Grafani → Explore → izvor `Loki` → upit `{app="<ime>"}` → vidiš logove prodavnice.
-  - Braon upozorenje **„Failed to load log volume … parse error … unexpected IDENTIFIER"** je samo histogram na vrhu (Grafana↔Loki kozmetička začkoljica) — **logovi se svejedno učitavaju**, ignoriši ga.
 - **Tracing (Tempo):** Explore → izvor `Tempo` → tab `Search` → `Run query` → vidiš trace-ove (backend ih šalje preko OTLP).
-  - Lista je puna `GET /probe/liveness`, `/probe/readiness`, `/metrics` jer se ti gađaju svakih ~15s i brojčano dominiraju. Tvoji `/api/...` pozivi (kupovina, artikli) su tu, samo retki.
   - **Da izvučeš baš API trace:** podesi vreme tako da obuhvati kad si kupovao (npr. `Last 3 hours`), pa tab **`TraceQL`** i upit (sintaksa: vitičaste zagrade + atribut):
     ```
     { name =~ ".*orders.*" }
@@ -230,14 +227,6 @@ Prati na <http://localhost:9090/alerts> da `NodeHighCPU` pređe u `Firing`. **Ob
   - **Očekuj:** `kubectl get pods -n <ns>` pokaže da broj replika prati promenu (2→3).
 - **Brisanje:** kanta na kartici → potvrdi.
   - **Očekuj:** ceo `tenant`-resurs (deployment, baza, ingress, dashboard, Discord kanal) nestaje (operator počisti preko owner-referenci i finalizera).
-
-### 4.15 DevOps (spec 5.x) — na GitHub-u, ne u klasteru
-- **PR pipeline:** otvori bilo koji PR → vidi da se pokreću `Tests`, `Lint`, `Docker Build`, `commitlint` i da blokiraju merge ako padnu.
-- **Conventional commits + linear history:** u Settings → Rules.
-- **CI/CD:** na merge u `main` rade `docker-publish` (slika sa SemVer tagom) i `helm-publish` (chart na OCI).
-- **IaC (eliminacioni 5.3):** repoi `helm-charts` (tvoji chart-ovi) i `kube-state` (stanje klastera) + opcioni ArgoCD.
-
----
 
 ## 5. Kad završiš — ponovo čisto (opciono)
 
