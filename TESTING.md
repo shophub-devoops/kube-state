@@ -20,40 +20,9 @@ k3d cluster list
 
 ## 2. Pokretanje iz nule
 
-Detaljno je u [`SETUP.md`](SETUP.md) (poglavlja 2–6). Ukratko, iz `kube-state` foldera:
-
-```powershell
-# A. napravi klaster, mora da budemo u kube-state folderu u terminalu
-k3d cluster create --config clusters/local/cluster.yaml
-
-# B. tajne (Grafana admin lozinka u 3 namespace-a)
-$GRAFANA_PASS = -join (1..32 | ForEach-Object { '{0:x}' -f (Get-Random -Maximum 16) })
-foreach ($ns in 'monitoring','shop-operator-system','shophub') {
-  kubectl create namespace $ns --dry-run=client -o yaml | kubectl apply -f -
-  kubectl create secret generic grafana-admin -n $ns `
-    --from-literal=admin-user=admin --from-literal=admin-password=$GRAFANA_PASS
-}
-Write-Host "ZAPAMTI Grafana lozinku: $GRAFANA_PASS"
-
-# C. (opciono, za Discord) bot token
-kubectl create namespace shophub --dry-run=client -o yaml | kubectl apply -f -
-kubectl create secret generic discord-bot-token -n shophub --from-literal=token=PASTE_BOT_TOKEN
-
-# D. instaliraj sve — ArgoCD način (preporuka)
-kubectl create namespace argocd
-kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-kubectl -n argocd rollout status deploy/argocd-repo-server
-kubectl apply -f argocd/project.yaml
-kubectl apply -f argocd/repositories.yaml
-kubectl apply -f argocd/root.yaml
-```
-
-Prati dok se sve ne podigne (prvi put **15–20 min** zbog povlačenja slika):
-
-```powershell
-kubectl get applications -n argocd -w     # čekaj Synced/Healthy, pa Ctrl+C
-kubectl get pods -A                        # sve treba Running
-```
+Kompletna procedura je u [`SETUP.md`](SETUP.md), poglavlja **3–6**: klaster → tajne (Grafana
+lozinka + Discord bot token) → ArgoCD app-of-apps → čekanje da sve bude Synced/Healthy
+(prvi put ~15–20 min zbog povlačenja slika). **Zapiši Grafana lozinku** — treba ti za korak 4.9.
 
 ---
 
@@ -69,12 +38,12 @@ ShopHub UI: <http://shophub.localhost:8080> (koristi **Chrome/Edge**).
 ## 4. Testiranje funkcionalnosti
 
 ### 4.1 Registracija i prijava
-- **Kako:** otvori <http://shophub.localhost:8080> → registruj se (email + lozinka ≥8 karaktera).
+- Otvori <http://shophub.localhost:8080> → registruj se (email + lozinka ≥8 karaktera).
 - **Provera u klasteru:** `kubectl get namespaces` → vidiš novi `tenant-…`.
 
 ### 4.2 Web3 prijava 
-- **Kako:** na login stranici izaberi „Sign in with wallet" → MetaMask potpiše poruku.
-- **Očekuj:** prijava bez lozinke; adresa novčanika je tvoj identitet.
+- Na login stranici izaberi „Sign in with wallet" → MetaMask potpiše poruku.
+- Prijava bez lozinke; adresa novčanika je tvoj identitet.
 
 ### 4.3 Kreiranje prodavnice
 - **Provera:**
@@ -93,28 +62,28 @@ kubectl get pods -n <ns>                     # sve, uključujući DB podove: "<i
 ```
 
 ### 4.5 Otvaranje prodavnice (storefront)
-- **Kako:** klikni **Open** na kartici prodavnice (ili idi na `http://<ime>.localhost:8080`).
+- Klikni **Open** na kartici prodavnice (ili idi na `http://<ime>.localhost:8080`).
 
 ### 4.6 Admin prodavnice + artikli 
-- **Kako:** u ShopHub-u klikni ikonicu **ključa** na kartici → kopiraj admin lozinku. Otvori `http://<ime>.localhost:8080/admin/login`, prijavi se, dodaj artikle (naziv, cena, količina).
+- U ShopHub-u klikni ikonicu **ključa** na kartici → kopiraj admin lozinku. Otvori `http://<ime>.localhost:8080/admin/login`, prijavi se, dodaj artikle (naziv, cena, količina).
 
 ### 4.7 Kupovina kriptom 
-- **Kako:** kao kupac → pretraga → dodaj u korpu → **Pay with USDT** → potvrdi u MetaMask-u.
+- Kao kupac → pretraga → dodaj u korpu → **Pay with USDT** → potvrdi u MetaMask-u.
 
 ### 4.8 Pregled porudžbina 
-- **Kako:** u admin panelu prodavnice otvori listu porudžbina.
-- **Očekuj:** vidiš kreiranu porudžbinu sa iznosom i statusom.
+- U admin panelu prodavnice otvori listu porudžbina.
+- Tu vidiš kreiranu porudžbinu sa iznosom i statusom.
 
 ### 4.9 Grafana — dashboard po prodavnici 
-- **Kako:**
+- 
   ```powershell
   kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80
   ```
-  Otvori <http://localhost:3000>, prijavi se kao `admin` / (lozinka iz koraka 2B). 
+  Otvori <http://localhost:3000>, prijavi se kao `admin` / (Grafana lozinka iz SETUP.md §4.1). 
  
 ### 4.10 Per-tenant Grafana izolacija
-- **Kako:** u ShopHub dashboard-u klikni **Metrics** → dobiješ login za **svoju** Grafana organizaciju.
-- **Očekuj:** prijavljen kao taj nalog vidiš **samo svoje** dashboarde, ne tuđe.
+- U ShopHub dashboard-u klikni **Metrics** → dobiješ login za **svoju** Grafana organizaciju.
+- Prijavljen kao taj nalog vidiš **samo svoje** dashboarde, ne tuđe.
 
 ### 4.11 Discord alarmi (spec D10)
 - **Provera da je kanal napravljen:** na Discord serveru se pojavi kanal sa imenom prodavnice.
@@ -138,7 +107,7 @@ kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:909
 ```
 Otvori <http://localhost:9090/alerts> → nađi `NodeHighMemory` i `NodeHighCPU`. Stanje `Inactive` je normalno dok nod nije preopterećen; `Pending`/`Firing` kad pređu prag.
 
-**Da OKINEŠ `NodeHighCPU` 
+**Da OKINEŠ** `NodeHighCPU`: 
 ```powershell
 kubectl run cpu-burn --image=busybox --restart=Never -- sh -c 'for i in $(seq $(nproc)); do while :; do :; done & done; wait'
 ```
@@ -155,17 +124,11 @@ kubectl delete pod cpu-burn
     { name =~ ".*orders.*" }
     ```
     (ili `{ name =~ ".*items.*" }`).
-  - **Šta gledaš:** svaki red u tabeli je JEDAN stvarni HTTP zahtev (trace); `Service` = ime
-    prodavnice (operator injektuje `OTEL_SERVICE_NAME`). Otvoren trace pokazuje rutu, status,
-    trajanje i vremensku liniju. Naši trace-ovi imaju **1 span** po zahtevu (instrumentiran je
-    HTTP sloj, ne i upiti ka bazi) — zato nema "vodopada" pod-koraka; poenta demo-a je da lanac
-    backend → OTLP → Tempo → Grafana radi end-to-end.
 
 ### 4.14 Izmena i brisanje prodavnice (spec 1.2)
 - **Izmena:** olovka na kartici → promeni availability (npr. standard→high) ili wallet → sačuvaj.
   - **Očekuj:** `kubectl get pods -n <ns>` pokaže da broj replika prati promenu (2→3).
 - **Brisanje:** kanta na kartici → potvrdi.
-  - **Očekuj:** ceo `tenant`-resurs (deployment, baza, ingress, dashboard, Discord kanal) nestaje (operator počisti preko owner-referenci i finalizera).
 
 ## 5. Kad završiš — ponovo čisto (opciono)
 
@@ -174,4 +137,5 @@ k3d cluster delete local
 
 docker system prune -a --volumes -f
 ```
+Ovaj prune nije bas pametno da radimo osim ako ne zelimo da provedemo puno vremena pull-ujuci image-e
 
