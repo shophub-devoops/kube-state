@@ -1,36 +1,4 @@
-# ShopHub — čišćenje, pokretanje i testiranje svega (vodič za početnike)
-
-Ovaj dokument te vodi kroz: **(1)** brisanje svega do praznog Docker-a, **(2)**
-pokretanje celog projekta iz nule, i **(3)** proveru **svake** funkcionalnosti
-— od kreiranja prodavnice i plaćanja kriptom do Grafane i Discord alarma.
-
-Pisan je za nekoga ko **ne zna mnogo o DevOps-u**. Komande se kucaju u
-**PowerShell**-u na Windows-u. Instalaciju alata (Docker, k3d, kubectl, helm)
-pokriva [`SETUP.md`](SETUP.md) poglavlje 1 — ovde podrazumevamo da su već tu.
-
----
-
-## 0. Pojmovi na 2 minuta (da razumeš šta radiš)
-
-| Pojam | Šta je, prostim rečima |
-|-------|------------------------|
-| **Docker image** | „Slika" — zamrznut paket aplikacije sa svim što joj treba. Kao instalacioni fajl. |
-| **Docker container** | Pokrenuta instanca slike — živ proces. Slika je recept, kontejner je skuvano jelo. |
-| **Kubernetes (k8s)** | Sistem koji pokreće i održava kontejnere — sam ih restartuje, skalira, povezuje. |
-| **k3d** | Alat koji pravi mali Kubernetes klaster **unutar Docker-a** na tvom računaru (za lokalni rad). |
-| **node** | Jedan „računar" u klasteru. Tvoj klaster ima 3 (1 server + 2 agenta), svi su Docker kontejneri. |
-| **pod** | Najmanja jedinica u k8s — omotač oko jednog (ili više) kontejnera. Aplikacija se vrti u podovima. |
-| **namespace** | „Fascikla" unutar klastera koja grupiše resurse. Svaki korisnik ShopHub-a dobija svoj (`tenant-…`). |
-| **kubectl** | Komandni alat kojim pričaš sa klasterom (`kubectl get pods` = „prikaži podove"). |
-| **helm** | „Instaler" za Kubernetes — instalira gomilu resursa odjednom iz paketa zvanog **chart**. |
-| **operator** | Program u klasteru koji automatski pravi/održava stvari. Tvoj Shop operator od jednog „Shop" zahteva napravi celu prodavnicu. |
-| **CRD** | Custom Resource Definition — novi tip objekta koji operator razume (npr. `Shop`, `Wallet`, `DiscordChannel`). |
-| **ArgoCD** | Alat koji čita git repo i sam dovodi klaster u to stanje (GitOps). |
-| **ShopHub vs Shop** | ShopHub = platforma gde praviš prodavnice. Shop = jedna pojedinačna prodavnica koju operator deployuje. |
-
----
-
-## 1. Čist prazan Docker (kako da obrišeš sve)
+## 1. Čist prazan Docker 
 
 Radi ovo kad hoćeš da kreneš od nule (npr. na novom laptopu, ili da proveriš da je sve ponovljivo).
 
@@ -48,10 +16,6 @@ Provera da je prazno (sve treba da bude 0):
 docker system df
 k3d cluster list
 ```
-
-> ⚠️ `docker system prune -a --volumes -f` briše **sve** Docker slike na računaru,
-> ne samo ovog projekta. Sve se ponovo povuče/izgradi pri sledećem pokretanju.
-
 ---
 
 ## 2. Pokretanje iz nule
@@ -84,15 +48,12 @@ kubectl apply -f argocd/repositories.yaml
 kubectl apply -f argocd/root.yaml
 ```
 
-Prati dok se sve ne podigne (prvi put 15–20 min zbog povlačenja slika):
+Prati dok se sve ne podigne (prvi put **15–20 min** zbog povlačenja slika):
 
 ```powershell
 kubectl get applications -n argocd -w     # čekaj Synced/Healthy, pa Ctrl+C
 kubectl get pods -A                        # sve treba Running
 ```
-
-> Ovo je odlična prilika da otvoriš Docker Desktop → Images i **gledaš kako se
-> slike pojavljuju jedna po jedna** — to su komponente koje se povlače.
 
 ---
 
@@ -101,95 +62,75 @@ kubectl get pods -A                        # sve treba Running
 ```powershell
 kubectl get pods -A
 ```
-
-Treba da vidiš `Running` podove u: `cnpg-system`, `mongodb-operator`, `monitoring`
-(prometheus, grafana, alertmanager, loki, tempo), `shop-operator-system`, `shophub`.
-
 ShopHub UI: <http://shophub.localhost:8080> (koristi **Chrome/Edge**).
 
 ---
 
-## 4. Testiranje SVAKE funkcionalnosti
+## 4. Testiranje funkcionalnosti
 
-Za svaku stavku: **šta** testiraš, **kako**, i **šta da očekuješ**. Štikliraj kako prolaziš.
-
-### 4.1 Registracija i prijava (spec 1.1)
+### 4.1 Registracija i prijava
 - **Kako:** otvori <http://shophub.localhost:8080> → registruj se (email + lozinka ≥8 karaktera).
-- **Očekuj:** ulaziš u dashboard. Iza scene: napravljen je tvoj `tenant-…` namespace.
 - **Provera u klasteru:** `kubectl get namespaces` → vidiš novi `tenant-…`.
 
-### 4.2 Web3 prijava (spec 1.1 opciono)
+### 4.2 Web3 prijava 
 - **Kako:** na login stranici izaberi „Sign in with wallet" → MetaMask potpiše poruku.
 - **Očekuj:** prijava bez lozinke; adresa novčanika je tvoj identitet.
 
-### 4.3 Kreiranje prodavnice (spec 1.2)
-- **Kako:** „New shop" → ime (npr. `odeca`), **availability** (`standard`=2 replike, `high`=3), **baza** (`postgres` ili `mongodb`), wallet adresa (ili dugme **Generate**), čekiraj **Discord** ako testiraš alarme.
-- **Očekuj:** prodavnica se pojavi sa bedžom availability-ja. Operator je primio `Shop` CRD i kreće da pravi sve.
+### 4.3 Kreiranje prodavnice
 - **Provera:**
   ```powershell
   kubectl get shops -A -o custom-columns="NS:.metadata.namespace,NAME:.metadata.name,AVAIL:.spec.availability,DB:.spec.database,READY:.status.readyReplicas"
   ```
 
-### 4.4 Operator je napravio celu prodavnicu (spec 3.1)
-Zameni `<ns>` i `<ime>` svojom prodavnicom (`kubectl get shops -A`):
+### 4.4 Operator je napravio celu prodavnicu
+`<ns>` je tenant namespace, `<ime>` ime prodavnice — obe vrednosti čitaš iz prve dve kolone
+`kubectl get shops -A`. Pažnja: namespace je granica KORISNIKA, pa ako korisnik ima više
+prodavnica, prva komanda ih pokazuje sve zajedno.
 ```powershell
-kubectl get deployment,svc,ingress -n <ns>     # deployment (2 ili 3 replike), service, ingress
-kubectl get pods -n <ns>                        # app podovi + baza (-1)
+kubectl get deployment,svc,ingress -n <ns>   # sve prodavnice tog korisnika (deployment 2/3 replike, service, ingress; + mongo "<ime>-svc" ako je mongodb)
+kubectl get pods -n <ns> -l app=<ime>        # samo APP podovi jedne prodavnice
+kubectl get pods -n <ns>                     # sve, uključujući DB podove: "<ime>-1" (postgres) / "<ime>-0" (mongo, 2/2)
 ```
-- **Očekuj:** `high` → 3 app poda, `standard` → 2. Baza (CNPG ili MongoDB) ima svoj pod.
 
 ### 4.5 Otvaranje prodavnice (storefront)
 - **Kako:** klikni **Open** na kartici prodavnice (ili idi na `http://<ime>.localhost:8080`).
-- **Očekuj:** vidiš storefront (prazan dok ne dodaš artikle).
 
-### 4.6 Admin prodavnice + artikli (spec 2.1)
+### 4.6 Admin prodavnice + artikli 
 - **Kako:** u ShopHub-u klikni ikonicu **ključa** na kartici → kopiraj admin lozinku. Otvori `http://<ime>.localhost:8080/admin/login`, prijavi se, dodaj artikle (naziv, cena, količina).
-- **Očekuj:** artikli se pojave u storefront-u. (Cene drži na ≤ par decimala.)
 
-### 4.7 Kupovina kriptom (spec 2.4)
-- **Priprema MetaMask-a:** mreža **Sepolia**, imaš Sepolia ETH (gas) i mintovan **TestUSDT** (`0x74b0ef…7ff6f`, 6 decimala) — vidi [`SETUP.md`](SETUP.md) poglavlje 8.
+### 4.7 Kupovina kriptom 
 - **Kako:** kao kupac → pretraga → dodaj u korpu → **Pay with USDT** → potvrdi u MetaMask-u.
-- **Očekuj:** status ide `pending` → `confirmed` (backend verifikuje uplatu na lancu). Stanje artikla se umanji.
 
-### 4.8 Pregled porudžbina (spec 2.2)
+### 4.8 Pregled porudžbina 
 - **Kako:** u admin panelu prodavnice otvori listu porudžbina.
 - **Očekuj:** vidiš kreiranu porudžbinu sa iznosom i statusom.
 
-### 4.9 Grafana — dashboard po prodavnici (spec 4.1)
+### 4.9 Grafana — dashboard po prodavnici 
 - **Kako:**
   ```powershell
   kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80
   ```
-  Otvori <http://localhost:3000>, prijavi se kao `admin` / (lozinka iz koraka 2B). Nađi dashboard te prodavnice.
-- **Očekuj panele:** ukupno HTTP zahteva (24h), uspešni (2xx/3xx), neuspešni (4xx/5xx), **404 sa endpoint-ima**, **jedinstveni posetioci**, GB saobraćaja, CPU/RAM/fajl-sistem/mreža.
-- **Da nakupiš podatke:** par puta osveži storefront i pogodi nepostojeći **API** put (npr. `http://<ime>.localhost:8080/api/nema-ovoga`). Napomena: ne-API putevi (npr. `/nema-ovoga`) vraćaju `index.html` sa statusom 200 (SPA fallback), pa se NE broje kao 404 — za pravi 404 put mora počinjati sa `/api`, `/metrics` ili `/probe`.
-
-### 4.10 Per-tenant Grafana izolacija (spec 4.1 opciono)
+  Otvori <http://localhost:3000>, prijavi se kao `admin` / (lozinka iz koraka 2B). 
+ 
+### 4.10 Per-tenant Grafana izolacija
 - **Kako:** u ShopHub dashboard-u klikni **Metrics** → dobiješ login za **svoju** Grafana organizaciju.
 - **Očekuj:** prijavljen kao taj nalog vidiš **samo svoje** dashboarde, ne tuđe.
 
 ### 4.11 Discord alarmi (spec D10)
-- **Preduslov:** prodavnica kreirana sa čekiranim Discord-om (korak 4.3) + `discord-bot-token` secret (korak 2C).
 - **Provera da je kanal napravljen:** na Discord serveru se pojavi kanal sa imenom prodavnice.
-- **Kako da okineš alarm:** alarm ima `for: 10s` (skraćeno radi demoa), pa je dovoljna kratka petlja koja gađa nepostojeći **API** put ~1 min:
+- **Kako da okineš alarm:**:
   ```powershell
   $end = (Get-Date).AddSeconds(60)
   while ((Get-Date) -lt $end) { curl.exe -s -o NUL -H "Host: <ime>.localhost" http://localhost:8080/api/nema-ovoga }
   ```
-- **Očekuj:** za ~1 min stigne **notifikacija na Discord kanal** te prodavnice. (Rate se računa u prozoru od 5m, pa „resolved" poruka stigne par minuta nakon što prestaneš.)
-- **Provera pravila:** `kubectl get prometheusrule -A` i `kubectl get alertmanagerconfig -A`.
 
 **Test `ShopDown` (obaranje prodavnice na 0 replika):**
 ```powershell
 kubectl scale shop <ime> -n <tenant-ns> --replicas=0   # → za ~1-2 min FIRING:1 u kanal prodavnice
 kubectl scale shop <ime> -n <tenant-ns> --replicas=2   # → resolved za par minuta
 ```
-> Skalira se **Shop** (naš scale subresource), ne Deployment — Deployment bi operator vratio na
-> sledećem reconcile-u. Vrati na 2 u roku od ~5 min: pravilo gleda prozor od 5m („bila je živa
-> nedavno, a sad nema nijedan živ pod"), pa se posle 5 min na nuli alarm sam ugasi i resolved
-> stigne pre nego što išta vratiš.
 
-### 4.12 Metrike i alarmi celog klastera (spec 4.1)
+### 4.12 Metrike i alarmi celog klastera
 
 **Provera da su cluster alarmi učitani (Prometheus UI):**
 ```powershell
@@ -197,30 +138,28 @@ kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:909
 ```
 Otvori <http://localhost:9090/alerts> → nađi `NodeHighMemory` i `NodeHighCPU`. Stanje `Inactive` je normalno dok nod nije preopterećen; `Pending`/`Firing` kad pređu prag.
 
-> Pragovi (operator chart, grupa `cluster.rules`): **RAM > 90%** i **CPU > 90%**, oba sa `for: 10s`  Per-shop alarmi (`ShopHighErrorRate`, `ShopHighLatency`) su takođe `for: 10s`.
-
-**Da OKINEŠ `NodeHighCPU` (opciono, opterećuje laptop — ventilatori će raditi):** jedan pod koji
-upali beskonačnu petlju **po svakom jezgru** (`nproc` se sam prilagodi broju jezgara):
+**Da OKINEŠ `NodeHighCPU` 
 ```powershell
 kubectl run cpu-burn --image=busybox --restart=Never -- sh -c 'for i in $(seq $(nproc)); do while :; do :; done & done; wait'
 ```
-Za ~2-3 min (rate prozor 1m + evaluacija 30s + groupWait 30s) stiže **jedna grupisana FIRING:3
-poruka u #cluster-alerts** — k3d nodovi dele CPU laptopa, pa sva tri pređu prag istovremeno.
-Prati i na <http://localhost:9090/alerts>. **Obavezno počisti posle:**
+**Obavezno počisti posle:**
 ```powershell
 kubectl delete pod cpu-burn
 ```
-> Ne koristi varijantu „više podova sa po jednom petljom" (npr. 3 poda = ~3 jezgra) — na mašini
-> sa ~12 jezgara to je ~25% CPU i alarm nikad ne pređe prag od 90%.
 
-### 4.13 Logovi i tracing (spec 4.1)
+### 4.13 Logovi i tracing 
 - **Logovi (Loki):** u Grafani → Explore → izvor `Loki` → upit `{app="<ime>"}` → vidiš logove prodavnice.
 - **Tracing (Tempo):** Explore → izvor `Tempo` → tab `Search` → `Run query` → vidiš trace-ove (backend ih šalje preko OTLP).
   - **Da izvučeš baš API trace:** podesi vreme tako da obuhvati kad si kupovao (npr. `Last 3 hours`), pa tab **`TraceQL`** i upit (sintaksa: vitičaste zagrade + atribut):
     ```
     { name =~ ".*orders.*" }
     ```
-    (ili `{ name =~ ".*items.*" }`). Alternativa: u `Search Options` podigni `Limit` na ~200 pa skroluj.
+    (ili `{ name =~ ".*items.*" }`).
+  - **Šta gledaš:** svaki red u tabeli je JEDAN stvarni HTTP zahtev (trace); `Service` = ime
+    prodavnice (operator injektuje `OTEL_SERVICE_NAME`). Otvoren trace pokazuje rutu, status,
+    trajanje i vremensku liniju. Naši trace-ovi imaju **1 span** po zahtevu (instrumentiran je
+    HTTP sloj, ne i upiti ka bazi) — zato nema "vodopada" pod-koraka; poenta demo-a je da lanac
+    backend → OTLP → Tempo → Grafana radi end-to-end.
 
 ### 4.14 Izmena i brisanje prodavnice (spec 1.2)
 - **Izmena:** olovka na kartici → promeni availability (npr. standard→high) ili wallet → sačuvaj.
@@ -232,10 +171,7 @@ kubectl delete pod cpu-burn
 
 ```powershell
 k3d cluster delete local
+
 docker system prune -a --volumes -f
 ```
 
-Sledeći put je brže jer... zapravo nije, ako si obrisao i slike — opet se sve
-povlači. Ako želiš **brzo** sledeće pokretanje, obriši **samo klaster**
-(`k3d cluster delete local`) a **ostavi slike** (preskoči `docker system prune`) —
-tada sledeći `k3d cluster create` + instalacija koriste već keširane slike.
