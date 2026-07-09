@@ -148,11 +148,14 @@ kubectl -n argocd get applications -w
 Čekaj dok sve aplikacije ne pređu u `Synced` / `Healthy` (prvi put 10–20 min zbog
 povlačenja image-a). `Ctrl+C` da prekineš praćenje.
 
-ArgoCD UI (opciono):
+ArgoCD UI (opciono). Username je `admin`. `port-forward` blokira terminal, pa lozinku izvuci u drugom terminalu:
 
 ```powershell
 kubectl -n argocd port-forward svc/argocd-server 8081:443
-# otvori https://localhost:8081 (admin lozinka:)
+# otvori https://localhost:8081 — username: admin, lozinka iz komande ispod 
+
+#(DRUGI TERMINAL):
+
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | % { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_)) }
 ```
 
@@ -208,11 +211,12 @@ ShopHub (kreiranje prodavnica) | <http://shophub.localhost:8080> | registruj nal
 
 Pojedinačna prodavnica | `http://<ime-prodavnice>.localhost:8080` | kupci bez prijave; admin lozinka iz ShopHub-a |
 
-Grafana port-forward:
+Grafana port-forward. Username je `admin`, lozinka je ona iz koraka 4.1 (izvuci je komandom ispod):
 
 ```powershell
 kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80
-# otvori http://localhost:3000
+# otvori http://localhost:3000 — username: admin, lozinku vidi komandom (drugi terminal):
+kubectl -n monitoring get secret grafana-admin -o jsonpath='{.data.admin-password}' | % { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_)) }
 ```
 
 ---
