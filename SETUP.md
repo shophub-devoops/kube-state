@@ -1,41 +1,8 @@
-# ShopHub — vodič za instalaciju i pokretanje od nule
-
-Ovaj dokument vodi **bilo koga sa praznim Windows laptopom** (samo Windows 10/11,
-bez ijednog DevOps alata) kroz instalaciju svega potrebnog i pokretanje cele
-ShopHub platforme lokalno, do tačke gde se može demonstrirati kreiranje
-prodavnice, kupovina kriptovalutom, metrike i alarmi.
-
-> **Bitno:** za **pokretanje** projekta ne treba ni Go, ni Node.js, ni Python,
-> ni kubebuilder. Sve aplikacije su unapred zapakovane u Docker image-e koji se
-> povlače sa DockerHub-a. Treba ti samo: Docker, k3d, kubectl, helm, Git i
-> pregledač sa MetaMask ekstenzijom. (Go/Node/kubebuilder su potrebni samo ako
-> bi neko **menjao i ponovo gradio** kod — za odbranu nisu.)
-
-Ceo proces traje ~15–30 min na svežem laptopu (najviše vremena ode na povlačenje
-Docker image-a). Ako se kasnije ponovo pokrene na istom laptopu, traje par minuta
-jer su image-i već keširani.
-
----
-
-## 0. Šta ćemo dobiti
-
-Posle ovog vodiča imaćeš lokalni Kubernetes klaster (k3d) sa:
-
-- **ShopHub** platformom na `http://shophub.localhost:8080` (korisnik kreira/briše prodavnice),
-- **Shop operatorom** koji od `Shop` CRD-a pravi pravu prodavnicu (deployment + baza + ingress + dashboard + alarmi),
-- bazama preko operatora (**CNPG** za PostgreSQL, **MongoDB** community operator za „light"),
-- **observability** stekom: Prometheus + Grafana + Alertmanager + Loki (logovi) + Tempo (tracing),
-- svaka prodavnica dobija svoj **Grafana dashboard** i **Discord alarme**,
-- plaćanje **USDT na Sepolia testnetu** preko MetaMask-a.
-
----
-
-## 1. Instalacija alata (jednom po laptopu)
+## 1. Instalacija alata 
 
 Sve komande u ovom poglavlju kucaš u **PowerShell-u pokrenutom kao Administrator**
-(Start → ukucaj „PowerShell" → desni klik → „Run as administrator").
 
-### 1.1 Chocolatey (paket-menadžer, da ostalo instaliramo jednom komandom)
+### 1.1 Chocolatey 
 
 ```powershell
 Set-ExecutionPolicy Bypass -Scope Process -Force
@@ -55,7 +22,7 @@ choco install docker-desktop k3d kubernetes-cli kubernetes-helm git -y
 - Pokreni **Docker Desktop** i sačekaj da u donjem levom uglu piše „Engine running".
   Docker mora da radi pre svega ostalog.
 
-Provera da je sve instalirano (u **novom** PowerShell prozoru, ne mora Administrator):
+Provera da je sve instalirano (u novom PowerShell prozoru, ne mora Administrator):
 
 ```powershell
 docker version
@@ -71,15 +38,13 @@ Ako svaka komanda ispiše verziju — spreman si.
 
 - Koristi **Chrome** ili **Edge** (oni automatski razrešavaju `*.localhost` na 127.0.0.1).
 - Instaliraj **MetaMask** ekstenziju: <https://metamask.io/> → „Add to browser".
-  (Podešavanje naloga/mreže je u poglavlju 8.)
 
 ---
 
 ## 2. Preuzimanje koda (klonirање repoa)
 
 ShopHub je podeljen na 5 repozitorijuma (spec 5.1: svaki mikroservis svoj repo).
-Za **pokretanje** ti u suštini treba samo `kube-state` (on opisuje ceo klaster),
-ali kloniraj sve da imaš celu sliku.
+Za **pokretanje** ti u suštini treba samo `kube-state` 
 
 ```powershell
 # napravi radni folder, npr. u Dokumentima
@@ -106,17 +71,11 @@ cd $HOME\Documents\GitHub\kube-state
 k3d cluster create --config clusters/local/cluster.yaml
 ```
 
-Ovo pravi klaster `local` (1 server + 2 agenta) i mapira load balancer:
-host **:8080 → :80** i **:8443 → :443**. Zato su prodavnice dostupne na
-`http://<ime-prodavnice>.localhost:8080`.
-
 Provera:
 
 ```powershell
 kubectl get nodes
 ```
-
-Treba da vidiš 3 noda u stanju `Ready`.
 
 ---
 
@@ -125,9 +84,6 @@ Treba da vidiš 3 noda u stanju `Ready`.
 Dve tajne moraš da napraviš ručno u klasteru (lozinke/tokeni ne idu u repo).
 
 ### 4.1 Grafana admin lozinka (obavezno)
-
-Grafana, Shop operator i ShopHub je čitaju iz Secret-a `grafana-admin` u **svom**
-namespace-u (Secret se ne deli između namespace-ova), pa pravimo isti u sva tri:
 
 ```powershell
 $GRAFANA_PASS = -join (1..32 | ForEach-Object { '{0:x}' -f (Get-Random -Maximum 16) })
@@ -142,10 +98,7 @@ Write-Host "ZAPAMTI Grafana admin lozinku: $GRAFANA_PASS"
 
 Sačuvaj ispisanu lozinku — njom se prijavljuješ u Grafanu kao maintainer.
 
-### 4.2 Discord bot token (opciono — za alarme na Discord)
-
-Potrebno samo ako želiš da demonstriraš alarme koji stižu na Discord (spec D10).
-Ako preskočiš, sve ostalo radi; prodavnice se prave bez Discord kanala.
+### 4.2 Discord bot token 
 
 1. Napravi Discord aplikaciju + bota: <https://discord.com/developers/applications>
    → New Application → Bot → Reset Token (kopiraj token).
@@ -159,8 +112,6 @@ Ako preskočiš, sve ostalo radi; prodavnice se prave bez Discord kanala.
 kubectl create namespace shophub --dry-run=client -o yaml | kubectl apply -f -
 kubectl create secret generic discord-bot-token -n shophub --from-literal=token=PASTE_BOT_TOKEN_OVDE
 ```
-
-> JWT secret za ShopHub se **ne pravi ručno** — helm chart ga sam generiše i čuva.
 
 ---
 
@@ -187,7 +138,8 @@ kubectl apply -f argocd/repositories.yaml
 kubectl apply -f argocd/root.yaml
 ```
 
-ArgoCD sad sam instalira sve komponente pravilnim redosledom (sync waves). Prati:
+ArgoCD sad sam instalira sve komponente pravilnim redosledom (sync waves). 
+Prati:
 
 ```powershell
 kubectl -n argocd get applications -w
@@ -203,6 +155,7 @@ kubectl -n argocd port-forward svc/argocd-server 8081:443
 # otvori https://localhost:8081 (admin lozinka:)
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | % { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_)) }
 ```
+
 
 ### Opcija B — ručni `helm install`
 
@@ -228,7 +181,6 @@ helm install shop-operator oci://registry-1.docker.io/urospetraskovic/shop-opera
 helm install shophub oci://registry-1.docker.io/urospetraskovic/shophub --version 0.2.1 -n shophub --create-namespace -f clusters/local/shophub/values.yaml
 ```
 
-(Tačne verzije i namespace-ovi su izvor istine u `clusters/local/*/helm.yaml`.)
 
 ---
 
@@ -247,17 +199,14 @@ kubectl get pods -n monitoring
 ```
 
 Ako neki pod visi u `Pending`/`ContainerCreating` prvih par minuta — to je normalno
-(povlačenje image-a). Ako stoji duže, vidi poglavlje 10.
 
 ---
 
 ## 7. Pristup aplikacijama
 
-| Šta | URL | Prijava |
-|-----|-----|---------|
-| ShopHub (kreiranje prodavnica) | <http://shophub.localhost:8080> | registruj nalog (email + lozinka) ili Web3 wallet |
-| Pojedinačna prodavnica | `http://<ime-prodavnice>.localhost:8080` | kupci bez prijave; admin lozinka iz ShopHub-a |
-| Grafana (maintainer) | port-forward, vidi dole | admin / lozinka iz koraka 4.1 |
+ShopHub (kreiranje prodavnica) | <http://shophub.localhost:8080> | registruj nalog (email + lozinka) ili Web3 wallet |
+
+Pojedinačna prodavnica | `http://<ime-prodavnice>.localhost:8080` | kupci bez prijave; admin lozinka iz ShopHub-a |
 
 Grafana port-forward:
 
@@ -265,10 +214,6 @@ Grafana port-forward:
 kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80
 # otvori http://localhost:3000
 ```
-
-> `*.localhost` radi automatski u Chrome/Edge. Ako koristiš `curl` ili neki drugi
-> alat koji ne razrešava `*.localhost`, dodaj liniju `127.0.0.1 shophub.localhost`
-> (i za svaku prodavnicu) u `C:\Windows\System32\drivers\etc\hosts`.
 
 ---
 
@@ -290,67 +235,21 @@ Plaćanje radi na **Sepolia testnetu** sa našim test tokenom (nije pravi novac)
 
 ---
 
-## 9. Demo scenario (end-to-end)
+## 9. Gašenje / čišćenje
 
-1. Otvori <http://shophub.localhost:8080>, **registruj** nalog.
-2. **New shop**: ime (npr. `odeca`), availability `high` (3 replike) ili `standard`
-   (2), baza `postgres` ili `mongodb`, wallet adresa (ili dugme **Generate**),
-   čekiraj Discord ako želiš alarme. Sačekaj da prodavnica postane `Ready`.
-3. Klikni **Open** → otvara se `http://odeca.localhost:8080`.
-4. U prodavnici uđi kao **admin** (lozinka: u ShopHub-u klikni ikonicu ključa na
-   kartici prodavnice) → dodaj artikle (naziv, cena, količina).
-5. Kao kupac: pretraži artikle → dodaj u korpu → **Pay with USDT** → potvrdi u
-   MetaMask-u → sačekaj on-chain potvrdu → porudžbina prelazi u `confirmed`.
-6. **Grafana**: prijavi se kao admin, otvori dashboard te prodavnice (HTTP saobraćaj,
-   404-ke, jedinstveni posetioci, CPU/RAM, itd.).
-7. **Alarmi**: izazovi greške gađajući nepostojeći **API** put prodavnice (ne-API putevi
-   vraćaju `index.html` sa 200, pa se ne broje kao 404). Alarm ima `for: 2m`, pa saobraćaj
-   mora da **traje neprekidno ~2 min** — kratka petlja ne okida; pusti trajnu ~4 min:
-   ```powershell
-   $end = (Get-Date).AddMinutes(4)
-   while ((Get-Date) -lt $end) { curl.exe -s -o NUL -H "Host: <ime>.localhost" http://localhost:8080/api/nema-ovoga }
-   ```
-   → alarm se okida → notifikacija stiže na Discord kanal te prodavnice (ako si podesio Discord u koraku 4.2).
-
----
-
-## 10. Troubleshooting
-
-**Pod u `ImagePullBackOff` / `ErrImagePull`.**
-Najčešće traženi tag image-a nije objavljen na DockerHub-u. Proveri koji image fali:
-
+**Pauza (preporuka, npr. pred odbranu):** zamrzni klaster umesto brisanja — sve preživi
+(slike, korisnici, prodavnice), budi se za ~2-3 min:
 ```powershell
-kubectl describe pod -n shophub -l app.kubernetes.io/name=shophub | Select-String -Pattern "Image|Failed"
+k3d cluster stop local
+k3d cluster start local
 ```
 
-Rešenja:
-- Uveri se da su DockerHub repozitorijumi `urospetraskovic/shophub-backend`,
-  `urospetraskovic/shop-backend` i `urospetraskovic/shop-operator-controller` **public**.
-- Ako fali tačan verzionisani tag (npr. `:0.2.1`), a postoji `:main`, privremeno
-  pregazi tag: za ShopHub `--set image.tag=main` pri `helm install`/u values, za
-  operator `--set shopImage=docker.io/urospetraskovic/shop-backend:main`. (Trajno
-  rešenje je pushovati odgovarajući git tag pa CI objavi verzionisani image.)
-
-**`shophub.localhost` se ne otvara.** Koristi Chrome/Edge, ili dodaj host u
-`hosts` fajl (vidi napomenu u poglavlju 7). Proveri i da k3d radi: `k3d cluster list`.
-
-**Sve visi u `Pending` jako dugo.** Proveri da Docker Desktop ima dovoljno
-resursa (Settings → Resources: bar 4 GB RAM, idealno 6–8 GB).
-
-**ArgoCD app `OutOfSync`/`Degraded`.** Otvori UI (poglavlje 5A) i pogledaj poruku;
-najčešće je u pitanju nedostajuća tajna iz koraka 4 ili još traje povlačenje image-a.
-
-**Baza prodavnice se ne diže.** Proveri da su CNPG / MongoDB operatori `Running`
-pre kreiranja prodavnice (`kubectl get pods -n cnpg-system -n mongodb-operator`).
-
----
-
-## 11. Gašenje / čišćenje
-
+**Potpuno brisanje:**
 ```powershell
 # obriši ceo klaster (sve nestaje)
 k3d cluster delete local
 ```
 
-Sledeći put kreni ponovo od poglavlja 3 (alati iz poglavlja 1 ostaju instalirani,
-Docker image-i ostaju keširani pa je drugo pokretanje znatno brže).
+Sledeći put kreni ponovo od poglavlja 3 (alati iz poglavlja 1 ostaju instalirani). Pažnja:
+slike koje klaster povlači žive UNUTAR k3d nodova, pa se brisanjem klastera gube — novo
+podizanje ih povlači ponovo (~15-20 min).
