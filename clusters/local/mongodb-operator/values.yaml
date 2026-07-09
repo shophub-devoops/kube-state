@@ -1,1 +1,9 @@
-# No overrides — defaults are fine for local development.
+# The operator must watch ALL namespaces: MongoDBCommunity CRs live in tenant
+# namespaces (one per ShopHub user), while the chart default watches only the
+# operator's own install namespace — CRs elsewhere would sit unreconciled
+# forever (empty PHASE, no pods, no connection secret, and Shops stuck in
+# DatabaseProvisioning). This was once fixed by an ad-hoc `helm upgrade` that
+# never landed in git, so a fresh bring-up silently lost it — hence it lives
+# here now, where ArgoCD enforces it.
+operator:
+  watchNamespace: "*"
