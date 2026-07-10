@@ -14,7 +14,7 @@ spec:
   sources:
     - repoURL: registry-1.docker.io/urospetraskovic
       chart: shophub
-      targetRevision: 0.2.3
+      targetRevision: 0.2.4
       helm:
         valueFiles:
           - $values/clusters/local/shophub/values.yaml
