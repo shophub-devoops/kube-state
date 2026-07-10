@@ -25,6 +25,16 @@ grafana:
     requests:
       cpu: 50m
       memory: 128Mi
+  # Persist Grafana's internal DB (sqlite) on a PVC. Without this the pod uses
+  # an emptyDir, so every restart wipes API-created state: tenant orgs, org
+  # memberships and the per-tenant dashboards the Shop operator pushes over
+  # HTTP. Main-org dashboards survive restarts anyway (re-provisioned from
+  # ConfigMaps by the sidecar), but tenant orgs only come back once each Shop
+  # happens to reconcile — until then tenants see an empty Grafana. k3d ships
+  # the local-path StorageClass, so the PVC binds out of the box.
+  persistence:
+    enabled: true
+    size: 2Gi
   # Admin credentials come from a pre-created Secret so the password never
   # lives in git. Create it (same password in the monitoring,
   # shop-operator-system and shophub namespaces — the operator and ShopHub use
