@@ -81,7 +81,7 @@ kubectl get nodes
 
 ## 4. Tajne koje se NIKAD ne čuvaju u git-u
 
-Dve tajne moraš da napraviš ručno u klasteru (lozinke/tokeni ne idu u repo).
+Tri tajne moraš da napraviš ručno u klasteru (lozinke/tokeni ne idu u repo).
 
 ### 4.1 Grafana admin lozinka (obavezno)
 
@@ -112,6 +112,22 @@ Sačuvaj ispisanu lozinku — njom se prijavljuješ u Grafanu kao maintainer.
 kubectl create namespace shophub --dry-run=client -o yaml | kubectl apply -f -
 kubectl create secret generic discord-bot-token -n shophub --from-literal=token=PASTE_BOT_TOKEN_OVDE
 ```
+
+### 4.3 JWT ključ za ShopHub (obavezno)
+
+Ključ kojim backend potpisuje login tokene. **Ne moraš da ga pamtiš niti zapisuješ** —
+koristi ga samo server, nikad čovek; samo pokreni komandu (svaki bring-up sme da
+dobije nov nasumičan ključ):
+
+```powershell
+$JWT = -join (1..48 | ForEach-Object { '{0:x}' -f (Get-Random -Maximum 16) })
+kubectl create secret generic shophub-jwt-static -n shophub --from-literal=jwt-secret=$JWT
+```
+
+> Zašto ručno, a ne iz charta: chart ume sam da generiše ključ, ali pod ArgoCD-om
+> se helm šabloni renderuju bez pristupa klasteru (`lookup` vrati prazno), pa bi
+> se ključ regenerisao na SVAKI sync — svi korisnici izlogovani, Grafana lozinke
+> nečitljive. Pre-kreiran Secret je stabilan ceo život klastera.
 
 ---
 
