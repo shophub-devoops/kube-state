@@ -17,7 +17,7 @@ spec:
     # registered as an OCI-enabled repository in argocd/repositories.yaml.
     - repoURL: registry-1.docker.io/urospetraskovic
       chart: shop-operator
-      targetRevision: 0.1.12
+      targetRevision: 0.1.13
       helm:
         valueFiles:
           - $values/clusters/local/shop-operator/values.yaml
