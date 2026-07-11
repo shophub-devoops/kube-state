@@ -4,8 +4,7 @@ metadata:
   name: shophub
   namespace: argocd
   annotations:
-    # Wave 2: depends on the Shop CRD (shop-operator, wave 1) and the
-    # ServiceMonitor CRD (kube-prometheus-stack, wave 0).
+    # Wave 2: zavisi od shop crd-ja, shop operator u wave 1 i service monitor crd-ja u wave 0
     argocd.argoproj.io/sync-wave: "2"
   finalizers:
     - resources-finalizer.argocd.argoproj.io

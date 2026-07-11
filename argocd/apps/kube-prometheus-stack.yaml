@@ -4,8 +4,7 @@ metadata:
   name: kube-prometheus-stack
   namespace: argocd
   annotations:
-    # Wave 0: publishes the monitoring CRDs (ServiceMonitor, PrometheusRule,
-    # AlertmanagerConfig) that shop-operator and shophub depend on.
+    # Wave 0: publishuje monitoring crd-jeve prvo
     argocd.argoproj.io/sync-wave: "0"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -30,6 +29,4 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
-      # The stack's CRDs exceed the client-side apply annotation size limit;
-      # server-side apply avoids the "metadata.annotations too long" error.
       - ServerSideApply=true

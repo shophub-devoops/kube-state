@@ -1,16 +1,14 @@
-# Registers the DockerHub OCI registry that hosts our shop-operator and shophub
-# Helm charts as an OCI-enabled Argo CD repository. The charts are public, so no
-# credentials are stored (anonymous pull). `url` must match the `repoURL` used by
-# the shop-operator / shophub Applications exactly.
-apiVersion: v1
+# AgroCD po konvenciji drzi repo konfiguraciju u secretima jer cesto zadrze kredencijale
+apiVersion: v1  # ali nasi chartovi su javni i nemaju kredencijale
 kind: Secret
 metadata:
   name: urospetraskovic-oci
   namespace: argocd
   labels:
-    argocd.argoproj.io/secret-type: repository
+    argocd.argoproj.io/secret-type: repository  # postoji OCI Helm registry na dockerhub sa tvojim chartovima
 stringData:
   name: urospetraskovic-oci
   type: helm
   url: registry-1.docker.io/urospetraskovic
-  enableOCI: "true"
+  enableOCI: "true"   # moji chartovi shophub i shop operator su objavljeni kao OCI artefakti na dockerhubu
+                      

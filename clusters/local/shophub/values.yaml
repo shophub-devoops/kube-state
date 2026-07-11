@@ -1,32 +1,11 @@
-# Value overrides for the shophub chart on the local k3d cluster.
-# Chart defaults are used: image.repository = docker.io/urospetraskovic/shophub-backend
-# and image.tag defaults to the chart appVersion (0.1.0), which exists on the
-# registry once the v0.1.0 tag is pushed in the shophub repo. Add overrides
-# below if the local cluster needs them (e.g. a different image tag).
-
-# JWT signing key comes from the pre-created shophub-jwt-static Secret (key:
-# jwt-secret; SETUP.md §4.3). Mandatory under Argo CD: helm `lookup` renders
-# offline there, so the chart's generate-and-preserve fallback would ROTATE the
-# key on every sync — logging out all users and breaking the encrypted tenant
-# Grafana passwords. Nobody ever needs to know this value; it is generated once
-# at bring-up and only the backend uses it.
 jwtExistingSecret: shophub-jwt-static
 
-# Per-tenant Grafana access (spec 4.1 optional). The admin password is read
-# from the pre-created grafana-admin Secret in this release's namespace (same
-# password as the monitoring-namespace copy Grafana itself uses); see the
-# kube-state README "Grafana admin secret" step. externalUrl is the
-# host-browser URL the tenant opens (k3d maps loadbalancer :80 to :8080).
 grafana:
   url: http://kube-prometheus-stack-grafana.monitoring
   externalUrl: http://grafana.localhost:8080
   adminUser: admin
   existingSecret: grafana-admin
 
-# Per-shop Discord notification channels (operator's DiscordChannel CRD).
-# guildId is the platform's Discord server; the bot token lives ONLY in the
-# pre-created discord-bot-token Secret (key: token) in the shophub namespace —
-# never in git. The bot needs Manage Channels + Manage Webhooks on the guild.
 discord:
   guildId: "1508273714897092648"
   botTokenSecret:

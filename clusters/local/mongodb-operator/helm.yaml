@@ -1,6 +1,3 @@
-# MongoDB Community Operator — substitute for Redis as the "light" database option.
-# Spec section 1.2 explicitly allows substitution; Spotahome redis-operator is abandoned,
-# REDB (spec preference) requires a trial license that is impractical for a student project.
 chart: mongodb/community-operator
 version: 0.13.0
 namespace: mongodb-operator

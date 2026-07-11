@@ -1,22 +1,10 @@
-# Single-binary Loki with ephemeral storage (demo; production would enable
-# persistence + object storage). Grafana and Prometheus are disabled here — we
-# reuse the kube-prometheus-stack instances and wire Loki in as an extra Grafana
-# datasource (see kube-prometheus-stack/values.yaml grafana.additionalDataSources).
 loki:
   enabled: true
-  # loki-stack auto-creates a Grafana datasource (picked up by the
-  # kube-prometheus-stack Grafana sidecar). It must NOT be default — Prometheus
-  # already holds that slot, and Grafana refuses two defaults.
   isDefault: false
-  # loki-stack 2.10.2 ships Loki 2.6.1, which predates the log-volume endpoint
-  # (2.8) and the `drop` LogQL stage (2.9) that modern Grafana uses for the logs
-  # histogram — so Explore showed "Failed to load log volume … parse error".
-  # Pin the last 2.9.x: same chart/config schema (the breaking change is Loki
-  # 3.0), now able to parse the volume query. Logs themselves worked regardless.
   image:
     tag: 2.9.10
   persistence:
-    enabled: false
+    enabled: false    # nema persistance da ne gomilamo gomile starih logova, stedimo resurse
 
 promtail:
   enabled: true
@@ -24,4 +12,5 @@ promtail:
 grafana:
   enabled: false
 prometheus:
-  enabled: false
+  enabled: false    # ne pravi svoju grafanu i prometheus, koristi iz kube prometehus stacka
+                    # da se to ne iskljuci imali bi duplu grafanu

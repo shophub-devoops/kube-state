@@ -4,7 +4,6 @@ metadata:
   name: loki
   namespace: argocd
   annotations:
-    # Wave 1: lands in the monitoring namespace created in wave 0.
     argocd.argoproj.io/sync-wave: "1"
   finalizers:
     - resources-finalizer.argocd.argoproj.io

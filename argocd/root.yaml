@@ -1,6 +1,3 @@
-# App-of-apps: a single Application that points at argocd/apps/, so Argo CD
-# manages every component Application declaratively. Applying this one manifest
-# (after the bootstrap below) brings the whole cluster to its desired state.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -13,15 +10,15 @@ spec:
   source:
     repoURL: https://github.com/shophub-devoops/kube-state.git
     targetRevision: main
-    path: argocd/apps
+    path: argocd/apps       # gleda ceo folder, svaki yaml u njemu tretiraj kao application
     directory:
-      recurse: true
+      recurse: true         # i podfoldere
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
   syncPolicy:
     automated:
-      prune: true
-      selfHeal: true
+      prune: true           # ako obrisemo app iz gita on se obrise i u klasteru
+      selfHeal: true        # ako neko izmeni resurs u klasteru agroCD ga vrati na ono sto ide u gitu
     syncOptions:
       - CreateNamespace=true

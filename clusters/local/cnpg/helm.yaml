@@ -1,5 +1,4 @@
-# CloudNativePG operator — PostgreSQL operator for the "standard" database option.
 chart: cnpg/cloudnative-pg
-version: 0.28.2
+version: 0.28.2     # ovde ne smemo da stavimo latest jer 2 helm instala u razlicito vreme mozda daju razlicite verzije
 namespace: cnpg-system
 createNamespace: true
