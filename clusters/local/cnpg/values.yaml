@@ -1,2 +1,2 @@
-# No overrides — defaults are fine for local development.
-# Production would tune: replicaCount, resources, monitoring.podMonitorEnabled.
+# Nema menjanja — defuault vrednosti charta su ok za lokalni dev, ne menjam nista
+# U produkciji bi menjao replike, resurse i monitoring

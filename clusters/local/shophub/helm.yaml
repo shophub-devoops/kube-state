@@ -1,10 +1,3 @@
-# ShopHub platform — our own Helm chart (OCI artifact published by the
-# helm-charts repo CI). Installs the ShopHub backend + cluster-wide RBAC
-# (manage Shop CRs across tenant namespaces) + CNPG users DB + JWT secret +
-# ServiceMonitor.
-#
-# Version 0.1.1 is produced by tagging v0.1.1 in the helm-charts repo; until
-# then only 0.1.1-dev.<date>.<sha> versions exist on the registry.
 chart: oci://registry-1.docker.io/urospetraskovic/shophub
 version: 0.2.4
 namespace: shophub

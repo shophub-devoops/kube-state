@@ -1,6 +1,3 @@
-# Single-binary Tempo for distributed tracing (spec 4.1 "tracing"). The Shop
-# backend pushes spans over OTLP/HTTP; Grafana queries traces via a Tempo
-# datasource. Pairs with Loki (logs) and kube-prometheus-stack (metrics).
 chart: grafana/tempo
 version: 1.10.3
 namespace: monitoring

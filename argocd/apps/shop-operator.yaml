@@ -4,17 +4,13 @@ metadata:
   name: shop-operator
   namespace: argocd
   annotations:
-    # Wave 1: installs the Shop/DiscordChannel/Wallet CRDs and a PrometheusRule
-    # (so it must come after kube-prometheus-stack's monitoring CRDs in wave 0),
-    # and before shophub which uses the Shop CRD.
+    # Wave 1: instalira 3 glavna CRD-ja i prometeus rule tako da mora posle wave 0
     argocd.argoproj.io/sync-wave: "1"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: shophub
   sources:
-    # OCI Helm chart published by the helm-charts repo. The registry is
-    # registered as an OCI-enabled repository in argocd/repositories.yaml.
     - repoURL: registry-1.docker.io/urospetraskovic
       chart: shop-operator
       targetRevision: 0.1.13

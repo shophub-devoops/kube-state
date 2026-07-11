@@ -1,21 +1,14 @@
-## Local k3d overrides for kube-prometheus-stack.
-## Production values would lift these (esp. retention + storage).
-
 prometheus:
   prometheusSpec:
-    # k3d nodes are docker containers with bounded RAM — keep Prometheus modest.
     resources:
       requests:
         cpu: 100m
         memory: 400Mi
       limits:
         memory: 800Mi
-    # 1 day retention is enough for demo. Production: 15d+.
-    retention: 1d
-    # Accept ServiceMonitor / PodMonitor from any namespace without the default
-    # `release: kube-prometheus-stack` label requirement. The Shop operator
-    # creates ServiceMonitors in tenant namespaces; we don't want to label
-    # them with the stack release name.
+    retention: 1d     # 1 dan pamcenja
+    # prometheus prihvata servicem onitore iz bilo kog namespacea bez obavezne labele
+    # znaci hvatamo sve podatke bez obzira na labelu
     serviceMonitorSelectorNilUsesHelmValues: false
     podMonitorSelectorNilUsesHelmValues: false
     ruleSelectorNilUsesHelmValues: false
@@ -25,28 +18,13 @@ grafana:
     requests:
       cpu: 50m
       memory: 128Mi
-  # Persist Grafana's internal DB (sqlite) on a PVC. Without this the pod uses
-  # an emptyDir, so every restart wipes API-created state: tenant orgs, org
-  # memberships and the per-tenant dashboards the Shop operator pushes over
-  # HTTP. Main-org dashboards survive restarts anyway (re-provisioned from
-  # ConfigMaps by the sidecar), but tenant orgs only come back once each Shop
-  # happens to reconcile — until then tenants see an empty Grafana. k3d ships
-  # the local-path StorageClass, so the PVC binds out of the box.
   persistence:
-    enabled: true
+    enabled: true   # cuvaju se podaci
     size: 2Gi
-  # Admin credentials come from a pre-created Secret so the password never
-  # lives in git. Create it (same password in the monitoring,
-  # shop-operator-system and shophub namespaces — the operator and ShopHub use
-  # it to drive the Grafana API, and Secrets can't be referenced across
-  # namespaces) before installing; see the README "Grafana admin secret" step.
   admin:
     existingSecret: grafana-admin
     userKey: admin-user
     passwordKey: admin-password
-  # Grafana is reachable at grafana.localhost:8080 (k3d maps loadbalancer :80 to
-  # host :8080). Maintainers log in as admin (Main Org → all dashboards); each
-  # ShopHub tenant logs in with their scoped Viewer account (own org only).
   ingress:
     enabled: true
     ingressClassName: traefik
@@ -54,38 +32,20 @@ grafana:
       - grafana.localhost
     path: /
     pathType: Prefix
-  # NOTE: the Loki datasource is provided by the loki-stack chart's own
-  # datasource ConfigMap (grafana_datasource=1), auto-loaded by this Grafana's
-  # sidecar — we don't add it here to avoid a duplicate / default conflict.
-  # Tempo (tracing) has no auto-datasource, so we add it explicitly. Non-default
-  # to keep Prometheus as the single default datasource.
-  additionalDataSources:
+  additionalDataSources:  # tempo nema auto-datasource kao loki, pa ga dodajemo rucno
     - name: Tempo
       type: tempo
       access: proxy
       url: http://tempo:3100
       isDefault: false
-  # Place each dashboard in the Grafana folder named by its `grafana_folder`
-  # annotation (the Shop operator sets it to the tenant namespace). Folder-level
-  # permissions then scope each tenant's dashboards to that tenant — the access
-  # control for spec 4.1 "users see only their own dashboards".
   sidecar:
     dashboards:
-      folderAnnotation: grafana_folder
+      folderAnnotation: grafana_folder    # per tenant izolacija
       provider:
         foldersFromFilesStructure: true
 
 alertmanager:
   alertmanagerSpec:
-    # Pick up AlertmanagerConfig CRs from any namespace. OnNamespace strategy
-    # auto-scopes each config's routes to its own namespace — per-Shop alert
-    # isolation: a Shop's AlertmanagerConfig only routes that namespace's
-    # alerts to that Shop's Discord channel (apiURL secret-ref, URL never in git).
-    #
-    # We deliberately do NOT set an inline `config` with discord_configs: the
-    # prometheus-operator validates inline configs against its own schema, which
-    # lacks webhook_url_file, so a secret-ref webhook is only possible via the
-    # AlertmanagerConfig CRD's apiURL field.
     alertmanagerConfigSelector: {}
     alertmanagerConfigNamespaceSelector: {}
     alertmanagerConfigMatcherStrategy:

@@ -1,13 +1,16 @@
-﻿apiVersion: k3d.io/v1alpha5
+﻿apiVersion: k3d.io/v1alpha5   # ovo nije kubernetes ovo je k3d, sluzi za kreiranje SAMOG KLASTERA
 kind: Simple
 metadata:
-  name: local
-servers: 1
-agents: 2
+  name: local           # klaster se zove local
+servers: 1              # 1 control plane node
+agents: 2               # 2 worker noda
 ports:
-  - port: 8080:80
+  - port: 8080:80       # mapiramo host portove na klaster load balancer http i https
     nodeFilters:
       - loadbalancer
   - port: 8443:443
     nodeFilters:
       - loadbalancer
+  
+  # kod komunikacije ide prvo browser pa load balancer pa traefik kontroler (ingres) pa service,
+  # i onda tek na kraju pod na backendu
