@@ -194,10 +194,10 @@ helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack --
 # wave 1 — logovi, tracing, naš operator
 helm install loki grafana/loki-stack --version 2.10.2 -n monitoring -f clusters/local/loki/values.yaml
 helm install tempo grafana/tempo --version 1.10.3 -n monitoring -f clusters/local/tempo/values.yaml
-helm install shop-operator oci://registry-1.docker.io/urospetraskovic/shop-operator --version 0.1.7 -n shop-operator-system --create-namespace -f clusters/local/shop-operator/values.yaml
+helm install shop-operator oci://registry-1.docker.io/urospetraskovic/shop-operator --version 0.1.13 -n shop-operator-system --create-namespace -f clusters/local/shop-operator/values.yaml
 
 # wave 2 — ShopHub platforma
-helm install shophub oci://registry-1.docker.io/urospetraskovic/shophub --version 0.2.1 -n shophub --create-namespace -f clusters/local/shophub/values.yaml
+helm install shophub oci://registry-1.docker.io/urospetraskovic/shophub --version 0.2.4 -n shophub --create-namespace -f clusters/local/shophub/values.yaml
 ```
 
 
